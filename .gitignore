@@ -1,0 +1,24 @@
+# Python cache produced when the launcher runs server.py.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local OS/editor noise.
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local logs and temporary scratch files.
+*.log
+*.tmp
+.cache/
+.tmp/
+
+# Local environment files.
+.env
+.env.*
+
+.sfc 
+
