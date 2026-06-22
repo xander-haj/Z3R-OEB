@@ -1,0 +1,210 @@
+/* Side-panel layout and canvas overlay controls. */
+
+.panel {
+  position: relative;
+}
+
+#leftPanel .panel-head,
+#rightPanel .panel-head {
+  display: block;
+  padding-top: 42px;
+}
+
+.left-tabs,
+.right-tabs {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  min-width: 0;
+}
+
+.left-tabs .tab-button,
+.right-tabs .tab-button {
+  flex: 1 1 0;
+  justify-content: center;
+  min-width: 0;
+}
+
+.panel-collapse {
+  border-radius: 50%;
+  height: 34px;
+  padding: 0;
+  position: absolute;
+  top: 10px;
+  width: 34px;
+}
+
+#leftPanelToggle {
+  left: 10px;
+}
+
+#rightPanelToggle {
+  right: 10px;
+}
+
+.panel-collapse svg {
+  fill: none;
+  height: 20px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 20px;
+}
+
+[data-right-panel][hidden] {
+  display: none;
+}
+
+.canvas-top-controls {
+  display: flex;
+  gap: 6px;
+  left: 50vw;
+  position: fixed;
+  top: 72px;
+  transform: translateX(-50%);
+  z-index: 12;
+}
+
+.canvas-top-controls .overlay-icon,
+.floating-right-button {
+  align-items: center;
+  background: rgba(23, 28, 22, 0.92);
+  border-color: #61725a;
+  border-radius: 50%;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.38);
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  padding: 0;
+  width: 42px;
+}
+
+.floating-right-button {
+  display: none;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 12;
+}
+
+.workspace.right-collapsed .floating-right-button {
+  display: inline-flex;
+}
+
+.canvas-top-controls .overlay-icon.active,
+.canvas-top-controls .overlay-icon[aria-pressed="true"],
+.floating-left-tabs .overlay-icon.active,
+.floating-left-tabs .overlay-icon[aria-pressed="true"] {
+  background: #37513b;
+  border-color: #9fc58d;
+  color: #f4fff0;
+}
+
+.canvas-top-controls svg,
+.floating-right-button svg {
+  fill: none;
+  height: 22px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: 22px;
+}
+
+.modal-overlay {
+  align-items: center;
+  background: rgba(8, 11, 8, 0.62);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 28px;
+  position: fixed;
+  z-index: 34;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.mod-menu-panel {
+  background: #171c16;
+  border: 1px solid #52614c;
+  border-radius: 8px;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.55);
+  max-height: min(84vh, 760px);
+  overflow: hidden;
+  width: min(520px, calc(100vw - 56px));
+}
+
+.modal-header {
+  align-items: center;
+  border-bottom: 1px solid #2e352d;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.mod-menu-content {
+  display: grid;
+  gap: 18px;
+  max-height: calc(min(84vh, 760px) - 64px);
+  overflow: auto;
+  padding: 16px;
+}
+
+.modal-note {
+  color: #b9c6b4;
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 8px 0;
+}
+
+.command-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.mod-menu-content button {
+  width: fit-content;
+}
+
+.success-indicator {
+  align-items: center;
+  background: #2f8f46;
+  border: 1px solid #7ee787;
+  border-radius: 50%;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.success-indicator[hidden] {
+  display: none;
+}
+
+.success-indicator svg {
+  fill: none;
+  height: 18px;
+  stroke: #f2fff0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  width: 18px;
+}
+
+.command-output {
+  background: #10130f;
+  border: 1px solid #2e352d;
+  border-radius: 4px;
+  color: #dbe5d7;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  max-height: 180px;
+  min-height: 64px;
+  overflow: auto;
+  padding: 8px;
+  white-space: pre-wrap;
+}

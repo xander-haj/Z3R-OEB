@@ -1,0 +1,352 @@
+<!doctype html>
+<!-- Overworld Workbench: local recipe editor for data-only overworld mods. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zelda 3 Overworld Workbench</title>
+    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./workbench-ui.css">
+    <link rel="stylesheet" href="./workbench-layers.css">
+    <link rel="stylesheet" href="./workbench-panels.css">
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand-block">
+          <h1>Overworld Workbench</h1>
+          <p id="statusText">Loading</p>
+        </div>
+        <div class="tool-strip" role="toolbar" aria-label="Map tools">
+          <button id="modMenuButton" class="tool-button" type="button" aria-label="Open project menu"
+            aria-expanded="false" aria-controls="modMenuOverlay" title="Project menu">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M4 7h16"></path>
+              <path d="M4 12h16"></path>
+              <path d="M4 17h16"></path>
+            </svg>
+          </button>
+          <button
+            id="undoButton"
+            class="tool-button"
+            type="button"
+            aria-label="Undo edit"
+            title="Undo"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M9 7l-5 5 5 5"></path>
+              <path d="M4 12h10a5 5 0 0 1 0 10h-1"></path>
+            </svg>
+          </button>
+          <button
+            id="redoButton"
+            class="tool-button"
+            type="button"
+            aria-label="Redo edit"
+            title="Redo"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M15 7l5 5-5 5"></path>
+              <path d="M20 12H10a5 5 0 0 0 0 10h1"></path>
+            </svg>
+          </button>
+          <button
+            id="selectToolButton"
+            class="tool-button active"
+            data-tool="select"
+            type="button"
+            aria-label="Select map32 tile"
+            aria-pressed="true"
+            title="Select"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M6 3l10 10-5 1.2 3.1 5.4-2.7 1.5-3.1-5.4-3.6 3.7L6 3z"></path>
+            </svg>
+          </button>
+          <button
+            id="paintToolButton"
+            class="tool-button"
+            data-tool="paint"
+            type="button"
+            aria-label="Paint selected asset tile"
+            aria-pressed="false"
+            title="Paint"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M14.7 4.4l4.9 4.9-8.8 8.8-5.7 1.5 1.5-5.7 8.1-9.5z"></path>
+              <path d="M13.3 6l4.7 4.7"></path>
+            </svg>
+          </button>
+          <button
+            id="gridLabelToggleButton"
+            class="tool-button active"
+            data-grid-label-toggle
+            type="button"
+            aria-label="Toggle area grid labels"
+            aria-pressed="true"
+            title="Area labels"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M4 6h16"></path>
+              <path d="M4 12h16"></path>
+              <path d="M4 18h16"></path>
+              <path d="M6 4v16"></path>
+              <path d="M12 4v16"></path>
+              <path d="M18 4v16"></path>
+              <path d="M8 8h2"></path>
+              <path d="M14 8h2"></path>
+            </svg>
+          </button>
+          <div class="segmented inspect-grid-tabs" id="inspectGridButtons" aria-label="Inspection grid">
+            <button class="active" data-inspect-grid="map32" type="button">Map32</button>
+            <button data-inspect-grid="map16" type="button">Map16</button>
+            <button data-inspect-grid="map8" type="button">Map8</button>
+          </div>
+          <div class="toolbar-world-tabs" id="groupButtons" aria-label="World group">
+            <button class="active" data-group="light" type="button">Light</button>
+            <button data-group="dark" type="button">Dark</button>
+            <button data-group="special" type="button">Special</button>
+          </div>
+        </div>
+      </header>
+      <main id="workspace" class="workspace">
+        <aside id="leftPanel" class="panel left">
+          <div class="panel-head">
+            <div class="left-tabs" role="tablist" aria-label="Left side menu">
+              <button class="tab-button active" data-left-tab="assets" type="button" title="Assets">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M3 7h7l2 2h9v10H3V7z"></path>
+                  <path d="M3 7V5h6l2 2"></path>
+                </svg>
+                <span>Assets</span>
+              </button>
+              <button class="tab-button" data-left-tab="layers" type="button" title="Layers">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M12 3l8 4-8 4-8-4 8-4z"></path>
+                  <path d="M4 12l8 4 8-4"></path>
+                  <path d="M4 17l8 4 8-4"></path>
+                </svg>
+                <span>Layers</span>
+              </button>
+            </div>
+            <button id="leftPanelToggle" class="icon-button panel-collapse" type="button"
+              aria-label="Minimize left side menu">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M15 6l-6 6 6 6"></path>
+              </svg>
+            </button>
+          </div>
+          <div id="assetsPanel" data-left-panel="assets" hidden>
+            <section>
+              <h2>Assets</h2>
+              <div class="asset-folder-tools">
+                <input id="assetFolderName" placeholder="map32/trees/red/">
+                <button id="createFolderButton" type="button">Add Folder</button>
+              </div>
+              <div id="assetFolders" class="asset-folders"></div>
+            </section>
+          </div>
+          <div id="layersPanel" data-left-panel="layers" hidden>
+            <section>
+              <h2>Layers</h2>
+              <div id="layerControls" class="layer-controls"></div>
+            </section>
+          </div>
+        </aside>
+        <section class="canvas-wrap">
+          <div class="canvas-top-controls" aria-label="Canvas marker toggles">
+            <button
+              class="overlay-icon enemy-toggle"
+              data-enemy-toggle
+              type="button"
+              aria-label="Show or hide overworld sprites"
+              aria-pressed="false"
+              title="Show or hide sprites"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 3v18"></path>
+                <path d="M3 12h18"></path>
+                <path d="M6.5 6.5l11 11"></path>
+                <path d="M17.5 6.5l-11 11"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="floating-left-tabs" aria-label="Open left side menu">
+            <button id="openAssetsButton" class="overlay-icon" type="button" aria-label="Open Assets">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M3 7h7l2 2h9v10H3V7z"></path>
+                <path d="M3 7V5h6l2 2"></path>
+              </svg>
+            </button>
+            <button id="openLayersButton" class="overlay-icon" type="button" aria-label="Open Layers">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M12 3l8 4-8 4-8-4 8-4z"></path>
+                <path d="M4 12l8 4 8-4"></path>
+                <path d="M4 17l8 4 8-4"></path>
+              </svg>
+            </button>
+          </div>
+          <button id="openPropertiesButton" class="floating-right-button" type="button" aria-label="Open Properties"
+            title="Open Properties">
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M4 7h16"></path>
+              <path d="M4 17h16"></path>
+              <path d="M8 4v6"></path>
+              <path d="M16 14v6"></path>
+            </svg>
+          </button>
+          <div id="tileContextMenu" class="context-menu" hidden>
+            <button id="saveTileAssetButton" type="button">Save Tile To Assets</button>
+            <button id="paintAssetButton" type="button" hidden>Paint</button>
+          </div>
+          <canvas id="mapCanvas"></canvas>
+        </section>
+        <aside id="rightPanel" class="panel right">
+          <div class="panel-head">
+            <div class="right-tabs" role="tablist" aria-label="Right side menu">
+              <button class="tab-button active" data-right-tab="properties" type="button" title="Properties">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M4 7h16"></path>
+                  <path d="M4 17h16"></path>
+                  <path d="M8 4v6"></path>
+                  <path d="M16 14v6"></path>
+                </svg>
+                <span>Properties</span>
+              </button>
+              <button class="tab-button" data-right-tab="patches" type="button" title="Patches">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M6 3h9l3 3v15H6V3z"></path>
+                  <path d="M15 3v4h4"></path>
+                  <path d="M9 11h6"></path>
+                  <path d="M9 15h6"></path>
+                </svg>
+                <span>Patches</span>
+              </button>
+            </div>
+            <button id="rightPanelToggle" class="icon-button panel-collapse" type="button"
+              aria-label="Minimize right side menu">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M9 6l6 6-6 6"></path>
+              </svg>
+            </button>
+          </div>
+          <div id="propertiesPanel" data-right-panel="properties">
+            <section>
+              <h2>Properties</h2>
+              <label>Sprite set
+                <select id="enemyStageSelect">
+                  <option value="first" selected>First part</option>
+                  <option value="beginning">Beginning</option>
+                  <option value="second">Second part</option>
+                  <option value="all">All sets</option>
+                </select>
+              </label>
+              <label>Map32
+                <input id="map32Input" value="0x0000">
+              </label>
+              <div class="tile-transform-controls" aria-label="Tile transforms">
+                <button data-map32-transform="rotateLeft" type="button">Left</button>
+                <button data-map32-transform="rotateRight" type="button">Right</button>
+                <button data-map32-transform="flipHorizontal" type="button">Flip H</button>
+                <button data-map32-transform="flipVertical" type="button">Flip V</button>
+              </div>
+              <div class="row">
+                <button id="fitButton" type="button">Fit</button>
+              </div>
+            </section>
+            <section>
+              <h2>Map Header</h2>
+              <label>Area
+                <input id="headerAreaInput" disabled>
+              </label>
+              <label>Size
+                <select id="headerSizeInput" disabled></select>
+              </label>
+              <label>BG GFX
+                <input id="headerGfxInput" value="0x00">
+              </label>
+              <label>BG Palette
+                <input id="headerPaletteInput" value="0x00">
+              </label>
+              <label>Sign Text
+                <input id="headerSignTextInput" value="0x0000">
+              </label>
+              <div class="row">
+                <button id="applyHeaderButton" type="button">Apply Header</button>
+              </div>
+            </section>
+            <section>
+              <h2>Navigation Record</h2>
+              <label>Record
+                <input id="navRecordKindInput" disabled>
+              </label>
+              <label>Key
+                <input id="navRecordKeyInput" disabled>
+              </label>
+              <label>XY
+                <input id="navRecordXyInput" value="0, 0">
+              </label>
+              <label>Scroll
+                <input id="navRecordScrollInput" value="0, 0">
+              </label>
+              <label>Camera
+                <input id="navRecordCameraInput" value="0, 0">
+              </label>
+              <label>Load
+                <input id="navRecordLoadInput" value="0, 0">
+              </label>
+              <label>Unk
+                <input id="navRecordUnkInput" value="0, 0">
+              </label>
+              <label>Extra
+                <input id="navRecordExtraInput" disabled>
+              </label>
+              <div class="row">
+                <button id="applyNavigationRecordButton" type="button">Apply Navigation</button>
+              </div>
+            </section>
+            <section>
+              <h2>Tile</h2>
+              <dl id="inspectorRows"><dt>Selection</dt><dd>none</dd></dl>
+            </section>
+          </div>
+          <section data-right-panel="patches" hidden>
+            <div id="patchEditors"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <button
+      id="guideButton"
+      class="guide-button"
+      type="button"
+      aria-controls="guideOverlay"
+      aria-expanded="false"
+      aria-label="Open Workbench guide"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24">
+        <path d="M5 4.5c0-1 0.8-1.8 1.8-1.8H20v16.8H7.1c-1.2 0-2.1 0.9-2.1 2V4.5z"></path>
+        <path d="M5 18.6c0-1.2 0.9-2.1 2.1-2.1H20"></path>
+        <path d="M8.2 6.6h8.4"></path>
+        <path d="M8.2 9.8h6.4"></path>
+      </svg>
+    </button>
+    <div id="guideOverlay" class="guide-overlay" hidden>
+      <aside class="guide-panel" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+        <header class="guide-header">
+          <div>
+            <h2 id="guideTitle">Workbench Guide</h2>
+            <p>How to use the editor, Project Menu, canvas tools, and Properties panel.</p>
+          </div>
+          <button id="guideCloseButton" type="button" aria-label="Close guide">Close</button>
+        </header>
+        <div class="guide-body">
+          <nav id="guideTabs" class="guide-tabs" aria-label="Guide sections"></nav>
+          <div id="guideContent" class="guide-content" tabindex="0"></div>
+        </div>
+      </aside>
+    </div>
+    <script type="module" src="./js/app.js?v=20260621-guide-tabs"></script>
+  </body>
+</html>

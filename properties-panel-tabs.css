@@ -1,0 +1,39 @@
+/* Sub-tab controls for the Properties panel. */
+
+.property-subtabs {
+  background: #171c16;
+  border-bottom: 1px solid #2e352d;
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: -2px 0 12px;
+  padding: 0 0 10px;
+  position: sticky;
+  top: -12px;
+  z-index: 3;
+}
+
+.property-subtabs button {
+  font-size: 12px;
+  line-height: 1.15;
+  min-height: 34px;
+  padding: 5px 6px;
+  text-align: left;
+  white-space: normal;
+}
+
+.property-subsection[hidden] {
+  display: none;
+}
+
+.property-field-heading {
+  color: #cbd8c6;
+  font-size: 12px;
+  font-weight: 700;
+  margin: 12px 0 6px;
+  text-transform: uppercase;
+}
+
+.interaction-toggle svg {
+  flex: 0 0 auto;
+}

@@ -1,0 +1,381 @@
+/* Workbench layout: dense editing panels around an unframed canvas viewport. */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #10130f;
+  color: #eef2ec;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+}
+
+.topbar {
+  align-items: center;
+  border-bottom: 1px solid #2e352d;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+
+h1, h2, p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 18px;
+}
+
+h2 {
+  font-size: 13px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
+.modbar, .row, .segmented {
+  display: flex;
+  gap: 6px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 260px 1fr 340px;
+  min-height: 0;
+}
+
+.panel {
+  background: #171c16;
+  border-right: 1px solid #2e352d;
+  overflow: auto;
+  padding: 12px;
+}
+
+.panel.right {
+  border-left: 1px solid #2e352d;
+  border-right: 0;
+}
+
+section + section {
+  margin-top: 18px;
+}
+
+button, select, input, textarea {
+  background: #20271f;
+  border: 1px solid #44503f;
+  color: #eef2ec;
+  font: inherit;
+}
+
+button {
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 6px 9px;
+}
+
+button.active {
+  background: #37513b;
+  border-color: #7ca06e;
+}
+
+input, select {
+  border-radius: 4px;
+  min-width: 0;
+  padding: 6px;
+}
+
+label {
+  display: grid;
+  gap: 5px;
+  margin: 10px 0;
+}
+
+.canvas-wrap {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#mapCanvas {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+dl {
+  display: grid;
+  gap: 4px 10px;
+  grid-template-columns: auto 1fr;
+}
+
+dt {
+  color: #aebaaa;
+}
+
+dd {
+  margin: 0;
+}
+
+.patch-editor {
+  margin-bottom: 12px;
+}
+
+.patch-editor textarea {
+  border-radius: 4px;
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  height: 150px;
+  line-height: 1.35;
+  resize: vertical;
+  width: 100%;
+}
+
+.guide-button {
+  align-items: center;
+  background: #e7f2dc;
+  border: 1px solid #9fc58d;
+  border-radius: 50%;
+  bottom: 18px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+  display: flex;
+  height: 54px;
+  justify-content: center;
+  left: 18px;
+  padding: 0;
+  position: fixed;
+  width: 54px;
+  z-index: 20;
+}
+
+.guide-button:hover,
+.guide-button:focus-visible {
+  background: #f4f9ef;
+  border-color: #c7e4b7;
+}
+
+.guide-button svg {
+  fill: none;
+  height: 28px;
+  stroke: #1b2a18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+  width: 28px;
+}
+
+.guide-overlay {
+  align-items: center;
+  background: rgba(8, 11, 8, 0.58);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 30;
+}
+
+.guide-overlay[hidden] {
+  display: none;
+}
+
+.guide-panel {
+  background: #171c16;
+  border: 1px solid #52614c;
+  border-radius: 8px;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.55);
+  color: #eef2ec;
+  display: flex;
+  flex-direction: column;
+  height: min(82vh, 760px);
+  max-width: 1040px;
+  overflow: hidden;
+  width: min(1040px, calc(100vw - 48px));
+}
+
+.guide-header {
+  align-items: flex-start;
+  border-bottom: 1px solid #2e352d;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  padding: 16px 18px;
+}
+
+.guide-header h2 {
+  margin: 0 0 5px;
+}
+
+.guide-header p {
+  color: #b9c6b4;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.guide-header button {
+  flex: 0 0 auto;
+}
+
+.guide-body {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: 230px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.guide-tabs {
+  align-content: start;
+  border-right: 1px solid #2e352d;
+  display: grid;
+  gap: 4px;
+  grid-auto-rows: max-content;
+  max-height: calc(min(82vh, 760px) - 78px);
+  overflow: auto;
+  padding: 12px;
+}
+
+.guide-tab {
+  align-items: center;
+  border-radius: 4px;
+  display: flex;
+  font-size: 13px;
+  line-height: 1.2;
+  min-height: 32px;
+  overflow-wrap: anywhere;
+  padding: 7px 9px;
+  text-align: left;
+  white-space: normal;
+  width: 100%;
+  word-break: break-word;
+}
+
+.guide-tab.active,
+.guide-tab[aria-selected="true"] {
+  background: #37513b;
+  border-color: #9fc58d;
+  color: #f4fff0;
+}
+
+.guide-content {
+  max-height: calc(min(82vh, 760px) - 78px);
+  min-width: 0;
+  overflow: auto;
+  padding: 18px 22px 24px;
+}
+
+.guide-content:focus {
+  outline: none;
+}
+
+.guide-content h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.guide-content h4,
+.guide-content h5 {
+  color: #f3f7ef;
+  font-size: 15px;
+  margin: 18px 0 7px;
+}
+
+.guide-content p,
+.guide-content li {
+  color: #dbe5d7;
+  line-height: 1.45;
+}
+
+.guide-content p {
+  margin: 0 0 10px;
+}
+
+.guide-content ul,
+.guide-content ol {
+  color: #dbe5d7;
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding-left: 22px;
+}
+
+.guide-content code {
+  background: #0f130e;
+  border: 1px solid #7ee787;
+  border-radius: 4px;
+  color: #eef2ec;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1em;
+  line-height: inherit;
+  padding: 1px 5px;
+}
+
+@media (max-width: 680px) {
+  .shell {
+    min-width: 0;
+  }
+
+  .topbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .modbar {
+    flex-wrap: wrap;
+  }
+
+  .guide-button {
+    bottom: 14px;
+    height: 50px;
+    left: 14px;
+    width: 50px;
+  }
+
+  .guide-overlay {
+    padding: 14px;
+  }
+
+  .guide-panel {
+    max-height: 82vh;
+    height: 82vh;
+    width: calc(100vw - 28px);
+  }
+
+  .guide-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guide-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .guide-tabs {
+    border-bottom: 1px solid #2e352d;
+    border-right: 0;
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+    padding: 8px;
+  }
+
+  .guide-tab {
+    flex: 0 0 auto;
+    max-width: 180px;
+    width: auto;
+  }
+
+  .guide-content {
+    max-height: calc(82vh - 174px);
+  }
+}

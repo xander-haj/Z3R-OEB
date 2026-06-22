@@ -1,0 +1,41 @@
+/* Layer panel controls for the Overworld Workbench. */
+
+.layer-controls {
+  display: grid;
+  gap: 14px;
+}
+
+.layer-group {
+  border-top: 1px solid #2e352d;
+  margin: 0;
+  padding-top: 10px;
+}
+
+.layer-toggle-list {
+  display: grid;
+  gap: 6px;
+}
+
+.layer-toggle {
+  align-items: center;
+  background: #20271f;
+  border: 1px solid #44503f;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 8px;
+}
+
+.layer-toggle input {
+  accent-color: #7ca06e;
+  flex: 0 0 auto;
+}
+
+.layer-toggle span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
