@@ -2,7 +2,7 @@
  * Command-object undo/redo for map32 terrain and sprite placement edits.
  */
 
-import { applyEdit } from "./command-apply.js?v=20260621-render-restore20";
+import { applyEdit } from "./command-apply.js?v=20260625-dialogue-tab";
 
 /**
  * Create an empty command history.

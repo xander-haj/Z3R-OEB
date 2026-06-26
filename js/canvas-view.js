@@ -2,7 +2,14 @@
  * Canvas viewport, pointer, pan, zoom, pick, and paint behavior.
  */
 
-import { applyCommand } from "./operations.js?v=20260621-render-restore20";
+import {
+  bindCanvasKeyboardControls,
+  instantPaintEnabled,
+  shouldStartCanvasPan,
+} from "./canvas-input-policy.js?v=20260626-control-shortcuts";
+import { paintSelectedAsset } from "./canvas-paint.js?v=20260626-paint-settings";
+import { drawSelectedSprite } from "./canvas-selection-draw.js?v=20260626-paint-settings";
+import { handleWheelZoom } from "./canvas-zoom.js?v=20260626-control-tabs";
 import { AREA_GRID_LABEL_GUTTER, drawAreaGridLabels } from "./grid-labels.js";
 import { layerVisible } from "./layer-state.js?v=20260621-render-restore20";
 import { beginTileMultiSelect, clearTileSelection, drawSelectedTile, drawTileSelection,
@@ -24,12 +31,14 @@ export function bindCanvas(state, handlers) {
   canvas.addEventListener("pointerdown", (event) => beginPointer(state, event, handlers));
   canvas.addEventListener("pointermove", (event) => movePointer(state, event, handlers));
   canvas.addEventListener("pointerup", (event) => endPointer(state, event));
+  canvas.addEventListener("auxclick", preventAuxClick);
   canvas.addEventListener("click", (event) => handleClick(state, event, handlers));
   canvas.addEventListener("contextmenu", (event) => handleContextMenu(state, event, handlers));
-  canvas.addEventListener("wheel", (event) => handleWheel(state, event), { passive: false });
+  canvas.addEventListener("wheel", (event) => handleWheelZoom(state, event, () => draw(state)), { passive: false });
   window.addEventListener("resize", () => draw(state));
   window.addEventListener("workbench:grid-labels-change", () => draw(state));
   window.addEventListener(INSPECT_GRID_EVENT, () => draw(state));
+  bindCanvasKeyboardControls(state, () => draw(state));
 }
 
 /**
@@ -107,16 +116,20 @@ function areaGridLabelGutter(state) {
  *   None.
  */
 function beginPointer(state, event, handlers) {
+  if (event.button === 0 || event.button === 1) {
+    state.pointerStart = { x: event.clientX, y: event.clientY };
+  }
   if (beginTileMultiSelect(state, event, handlers)) {
     draw(state);
     return;
   }
-  if (event.button !== 0) {
+  if (!shouldStartCanvasPan(state, event)) {
     return;
   }
   state.dragging = true;
   state.draggingPointerId = event.pointerId;
   state.dragStart = { x: event.clientX, y: event.clientY, panX: state.panX, panY: state.panY };
+  event.preventDefault();
   event.currentTarget.setPointerCapture(event.pointerId);
 }
 
@@ -178,19 +191,31 @@ function endPointer(state, event) {
 function handleClick(state, event, handlers) {
   if (state.suppressNextClick) {
     state.suppressNextClick = false;
+    state.pointerStart = null;
     return;
   }
-  if (!state.app || pointerMoved(state, event)) {
+  const moved = pointerMoved(state, event);
+  state.pointerStart = null;
+  if (!state.app || moved) {
     return;
   }
-  if (inspectEventSprite(state, event, handlers)) {
-    return;
-  }
-  if (inspectEventInteraction(state, event, handlers)) {
-    return;
+  const instantPaint = instantPaintEnabled(state);
+  if (!instantPaint) {
+    if (inspectEventSprite(state, event, handlers)) {
+      return;
+    }
+    if (inspectEventInteraction(state, event, handlers)) {
+      return;
+    }
   }
   const info = inspectEventTile(state, event, handlers);
-  if (!info || state.currentTool !== "select") {
+  if (!info) {
+    return;
+  }
+  if (state.currentTool === "paint") {
+    if (instantPaint) {
+      paintSelectedAsset(state, info, handlers, canvasToWorld(state, event));
+    }
     return;
   }
   handlers.onPick(info);
@@ -275,95 +300,6 @@ function inspectEventTile(state, event, handlers) {
   return info;
 }
 
-// Draw a visible selection target around a sprite or interaction.
-function drawSelectedSprite(ctx, info) {
-  if (info?.kind !== "sprite" && info?.kind !== "enemy" && info?.kind !== "interaction") {
-    return;
-  }
-  const size = 24;
-  ctx.save();
-  ctx.lineWidth = 2 / ctx.getTransform().a;
-  ctx.strokeStyle = "#fff49a";
-  ctx.fillStyle = "rgba(255, 231, 105, 0.16)";
-  ctx.beginPath();
-  ctx.rect(info.centerX - size / 2, info.centerY - size / 2, size, size);
-  ctx.fill();
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(info.centerX - 15, info.centerY);
-  ctx.lineTo(info.centerX + 15, info.centerY);
-  ctx.moveTo(info.centerX, info.centerY - 15);
-  ctx.lineTo(info.centerX, info.centerY + 15);
-  ctx.stroke();
-  ctx.restore();
-}
-
-/**
- * Paint the selected asset map32 value into a clicked map32 cell.
- *
- * Parameters:
- *   state: Shared Workbench state.
- *   info: Inspector info for the clicked cell.
- *   handlers: Paint callbacks.
- *   point: Rendered world point used for sprite placement.
- * Returns:
- *   None.
- */
-function paintSelectedAsset(state, info, handlers, point) {
-  if (info.readOnly) {
-    return;
-  }
-  const navigation = handlers.getPaintNavigation?.();
-  if (navigation) {
-    handlers.onPaintNavigation?.(navigation, info, point);
-    return;
-  }
-  const sprite = handlers.getPaintSprite?.();
-  if (sprite) {
-    handlers.onPaintSprite?.(sprite, info, point);
-    return;
-  }
-  const after = handlers.getPaintMap32();
-  if (after === null) {
-    handlers.onPaintMissing();
-    return;
-  }
-  if (after === info.map32) {
-    return;
-  }
-  applyCommand(state.history, state.assets, {
-    kind: "terrain.set-map32",
-    screen: info.screen,
-    x: info.map32X,
-    y: info.map32Y,
-    before: info.map32,
-    after,
-  });
-  handlers.rerender();
-}
-
-/**
- * Zoom around the pointer position.
- *
- * Parameters:
- *   state: Shared Workbench state.
- *   event: Wheel event.
- * Returns:
- *   None.
- */
-function handleWheel(state, event) {
-  event.preventDefault();
-  const factor = event.deltaY < 0 ? 1.15 : 1 / 1.15;
-  const rect = event.currentTarget.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  const world = { x: (x - state.panX) / state.zoom, y: (y - state.panY) / state.zoom };
-  state.zoom = Math.max(0.05, Math.min(4, state.zoom * factor));
-  state.panX = x - world.x * state.zoom;
-  state.panY = y - world.y * state.zoom;
-  draw(state);
-}
-
 /**
  * Convert a canvas-space pointer to rendered world coordinates.
  *
@@ -391,6 +327,15 @@ function canvasToWorld(state, event) {
  *   True if the pointer moved enough to count as panning.
  */
 function pointerMoved(state, event) {
-  const start = state.dragStart;
+  const start = state.pointerStart || state.dragStart;
   return start && (Math.abs(event.clientX - start.x) > 2 || Math.abs(event.clientY - start.y) > 2);
+}
+
+/**
+ * Prevent browser middle-click autoscroll after middle-drag panning starts.
+ */
+function preventAuxClick(event) {
+  if (event.button === 1) {
+    event.preventDefault();
+  }
 }

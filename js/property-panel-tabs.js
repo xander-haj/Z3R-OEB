@@ -2,7 +2,9 @@
  * Sub-tabs for the dense Properties panel.
  */
 
-const STYLE_HREF = "../properties-panel-tabs.css?v=20260621-properties-tabs";
+import { selectionHasDialogue } from "./dialogue-selection.js?v=20260625-dialogue-tab";
+
+const STYLE_HREF = "../properties-panel-tabs.css?v=20260626-tab-toggle";
 const TAB_DEFS = [
   ["general", "General", "Properties"],
   ["inspect", "Inspect", "Inspect"],
@@ -17,6 +19,7 @@ const TAB_DEFS = [
   ["sprite-placement", "Sprite Placement", "Sprite Placement"],
   ["static-overlay", "Static Overlay", "Static Overlay"],
   ["tile", "Tile", "Tile"],
+  ["dialogue", "Dialogue", "Dialogue"],
 ];
 
 let boundState = null;
@@ -30,8 +33,10 @@ export function bindPropertyPanelTabs(state) {
   prepareSections();
   const sections = sectionMap();
   const tabs = ensureTabStrip();
+  const wanted = sections.has(state.propertySubtab) && tabAvailable(state.propertySubtab, state) ?
+    state.propertySubtab : "general";
+  state.propertySubtab = wanted;
   renderTabs(tabs, sections, state);
-  const wanted = sections.has(state.propertySubtab) ? state.propertySubtab : "general";
   activatePropertySubtab(state, wanted);
 }
 
@@ -107,8 +112,8 @@ function addInlineHeading(selector, text, markerClass) {
 }
 
 function ensureTabStrip() {
-  const panel = propertiesPanel();
-  let tabs = panel.querySelector("[data-property-tabs]");
+  const shell = ensureTabControls();
+  let tabs = shell.querySelector("[data-property-tabs]");
   if (tabs) {
     return tabs;
   }
@@ -117,7 +122,7 @@ function ensureTabStrip() {
   tabs.dataset.propertyTabs = "true";
   tabs.setAttribute("role", "tablist");
   tabs.setAttribute("aria-label", "Properties sections");
-  panel.insertBefore(tabs, panel.firstElementChild);
+  shell.insertBefore(tabs, shell.firstElementChild);
   tabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-property-tab-button]");
     if (button) {
@@ -129,8 +134,13 @@ function ensureTabStrip() {
 
 function renderTabs(tabs, sections, state) {
   tabs.innerHTML = "";
+  const expanded = tabsExpanded(state);
+  tabs.dataset.propertyTabsMode = expanded ? "expanded" : "compact";
   for (const [key, label] of TAB_DEFS) {
-    if (!sections.has(key)) {
+    if (!sections.has(key) || !tabAvailable(key, state)) {
+      continue;
+    }
+    if (!expanded && key !== state.propertySubtab) {
       continue;
     }
     const button = document.createElement("button");
@@ -142,11 +152,15 @@ function renderTabs(tabs, sections, state) {
     button.classList.toggle("active", state.propertySubtab === key);
     tabs.append(button);
   }
+  updateTabToggle(state);
 }
 
+/**
+ * Activate a Properties subtab and keep compact tab mode pointed at the active button.
+ */
 function activatePropertySubtab(state, key) {
   const sections = sectionMap();
-  if (!sections.has(key)) {
+  if (!sections.has(key) || !tabAvailable(key, state)) {
     return;
   }
   state.propertySubtab = key;
@@ -159,10 +173,88 @@ function activatePropertySubtab(state, key) {
     button.classList.toggle("active", active);
     button.setAttribute("aria-selected", active ? "true" : "false");
   }
+  if (!tabsExpanded(state)) {
+    renderTabs(document.querySelector("[data-property-tabs]"), sections, state);
+  }
+  updateTabToggle(state);
+}
+
+/**
+ * Create the sticky tab/toggle shell once at the top of the Properties panel.
+ */
+function ensureTabControls() {
+  const panel = propertiesPanel();
+  let shell = panel.querySelector("[data-property-tab-controls]");
+  if (shell) {
+    return shell;
+  }
+  shell = document.createElement("div");
+  shell.className = "property-tab-controls";
+  shell.dataset.propertyTabControls = "true";
+  panel.insertBefore(shell, panel.firstElementChild);
+  shell.append(tabToggleButton());
+  return shell;
+}
+
+/**
+ * Build the compact/expanded tab visibility toggle.
+ */
+function tabToggleButton() {
+  const button = document.createElement("button");
+  button.className = "property-tab-toggle";
+  button.dataset.propertyTabToggle = "true";
+  button.type = "button";
+  button.addEventListener("click", () => {
+    if (!boundState) {
+      return;
+    }
+    boundState.propertyTabsExpanded = !tabsExpanded(boundState);
+    renderTabs(document.querySelector("[data-property-tabs]"), sectionMap(), boundState);
+  });
+  return button;
+}
+
+/**
+ * Keep the toggle label and expanded state synchronized with Workbench state.
+ */
+function updateTabToggle(state) {
+  const button = document.querySelector("[data-property-tab-toggle]");
+  if (!button) {
+    return;
+  }
+  const expanded = tabsExpanded(state);
+  const label = expanded ? "Compact property tabs" : "Expand property tabs";
+  button.replaceChildren(arrowIcon(expanded));
+  button.setAttribute("aria-label", label);
+  button.setAttribute("aria-expanded", expanded ? "true" : "false");
+  button.title = label;
+}
+
+/**
+ * Default to the current full tab strip unless the user explicitly compacted it.
+ */
+function tabsExpanded(state) {
+  return state?.propertyTabsExpanded !== false;
+}
+
+/**
+ * Build the up/down arrow glyph for the compact/expanded tab toggle.
+ */
+function arrowIcon(expanded) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  path.setAttribute("d", expanded ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6");
+  svg.append(path);
+  return svg;
 }
 
 function tabForSelection(info) {
   if (info?.kind === "sprite" || info?.kind === "enemy") {
+    if (selectionHasDialogue(info, boundState?.editorDb)) {
+      return "dialogue";
+    }
     return "sprite-placement";
   }
   if (info?.kind === "interaction") {
@@ -183,6 +275,10 @@ function tabForSelection(info) {
     return "special-visuals";
   }
   return null;
+}
+
+function tabAvailable(key, state) {
+  return key !== "dialogue" || selectionHasDialogue(state?.selected, state?.editorDb);
 }
 
 function sectionMap() {

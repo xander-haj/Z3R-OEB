@@ -2,6 +2,9 @@
  * DOM panel helpers for mod selection, inspector, and patch JSON editors.
  */
 
+import { defaultPatch } from "./patch-editor-defaults.js?v=20260625-editor-db";
+import { appendEditorDatabaseRows } from "./inspector-database-rows.js?v=20260625-exit-filter";
+
 const PATCH_LABELS = {
   "patches/map32-definitions.json": "Map32 Definitions",
   "patches/map16-definitions.json": "Map16 Definitions",
@@ -10,6 +13,7 @@ const PATCH_LABELS = {
   "patches/chr-recipes.json": "CHR Recipes",
   "patches/palettes.json": "Palettes",
   "patches/metadata.json": "Metadata",
+  "patches/dialogue.json": "Dialogue",
 };
 
 /**
@@ -87,21 +91,23 @@ export function readPatchEditors() {
  *
  * Parameters:
  *   info: Tile information from OverworldMapCache.inspect or a sprite selection.
+ *   inspectGrid: Active map32/map16/map8 inspection mode.
+ *   editorDb: Optional editor database descriptor from dat-dump.
  * Returns:
  *   None.
  */
-export function updateInspector(info, inspectGrid = "map32") {
+export function updateInspector(info, inspectGrid = "map32", editorDb = null) {
   const rows = document.querySelector("#inspectorRows");
   if (!info) {
     rows.innerHTML = "<dt>Selection</dt><dd>none</dd>";
     return;
   }
   if (info.kind === "sprite" || info.kind === "enemy") {
-    updateSpriteInspector(rows, info);
+    updateSpriteInspector(rows, info, editorDb);
     return;
   }
   if (info.kind === "interaction") {
-    updateInteractionInspector(rows, info);
+    updateInteractionInspector(rows, info, editorDb);
     return;
   }
   rows.innerHTML = "";
@@ -125,6 +131,7 @@ export function updateInspector(info, inspectGrid = "map32") {
     dd.textContent = value;
     rows.append(dt, dd);
   }
+  appendEditorDatabaseRows(rows, info, inspectGrid, editorDb, appendRow);
 }
 
 function inspectGridLabel(value) {
@@ -143,10 +150,11 @@ function inspectGridLabel(value) {
  * Parameters:
  *   rows: Definition-list element to replace.
  *   info: Sprite selection object from the sprite overlay.
+ *   editorDb: Optional editor database descriptor from dat-dump.
  * Returns:
  *   None.
  */
-function updateSpriteInspector(rows, info) {
+function updateSpriteInspector(rows, info, editorDb) {
   rows.innerHTML = "";
   appendRow(rows, "Selection", "overworld sprite");
   appendRow(rows, "Record", info.placementRole || "sprite placement");
@@ -160,9 +168,20 @@ function updateSpriteInspector(rows, info) {
   if (info.terrainDependency) {
     appendRow(rows, "Terrain Detail", info.terrainDependency.detail);
   }
+  appendEditorDatabaseRows(rows, info, "map32", editorDb, appendRow);
 }
 
-function updateInteractionInspector(rows, info) {
+/**
+ * Update the inspector for hidden items, travel markers, entrances, holes, and exits.
+ *
+ * Parameters:
+ *   rows: Definition-list element to replace.
+ *   info: Interaction selection object from the interaction overlay.
+ *   editorDb: Optional editor database descriptor from dat-dump.
+ * Returns:
+ *   None.
+ */
+function updateInteractionInspector(rows, info, editorDb) {
   rows.innerHTML = "";
   appendRow(rows, "Selection", info.category || "interaction");
   appendRow(rows, "Code", info.id || "none");
@@ -193,6 +212,7 @@ function updateInteractionInspector(rows, info) {
   if (info.runtimeNote) {
     appendRow(rows, "Runtime Note", info.runtimeNote);
   }
+  appendEditorDatabaseRows(rows, info, "map32", editorDb, appendRow);
 }
 
 function appendInteractionPosition(rows, info) {
@@ -200,7 +220,11 @@ function appendInteractionPosition(rows, info) {
     appendRow(rows, "Grid", `${info.gridX},${info.gridY} on the 16px grid`);
   }
   if (info.pixelX !== null && info.pixelX !== undefined) {
-    appendRow(rows, "Pixel", `${info.pixelX},${info.pixelY} in area-local pixels`);
+    const label = info.navigationList === "exits" ? "Spawn Pixel" : "Pixel";
+    appendRow(rows, label, `${info.pixelX},${info.pixelY} in area-local pixels`);
+  }
+  if (Array.isArray(info.door)) {
+    appendRow(rows, "Door Grid", `${info.door[1]},${info.door[2]} ${info.door[0]}`);
   }
 }
 
@@ -347,39 +371,6 @@ function readableBehavior(behavior) {
     random_sprite_or_empty: "random sprite or empty",
     whirlpool: "whirlpool destination",
   }[behavior] || behavior || "unknown";
-}
-
-/**
- * Return the default empty patch document for a path.
- *
- * Parameters:
- *   path: Patch path.
- * Returns:
- *   Empty patch envelope.
- */
-function defaultPatch(path) {
-  if (path.includes("map32-definitions")) {
-    return { format: "zelda3-overworld-map32-definitions-v1", definitions: [] };
-  }
-  if (path.includes("map16-definitions")) {
-    return { format: "zelda3-overworld-map16-definitions-v1", definitions: [] };
-  }
-  if (path.includes("map8-words")) {
-    return { format: "zelda3-overworld-map8-words-v1", edits: [] };
-  }
-  if (path.includes("tile-attributes")) {
-    return { format: "zelda3-overworld-tile-attributes-v1", edits: [] };
-  }
-  if (path.includes("chr-recipes")) {
-    return { format: "zelda3-overworld-chr-recipes-v1", recipes: [] };
-  }
-  if (path.includes("palettes")) {
-    return { format: "zelda3-overworld-palettes-v1", patches: [] };
-  }
-  if (path.includes("metadata")) {
-    return { format: "zelda3-overworld-metadata-v1", patches: [] };
-  }
-  throw new Error(`Unsupported patch editor path: ${path}`);
 }
 
 /**

@@ -12,21 +12,13 @@ import {
   drawEditorSpawnSpritesToImage,
   getEditorSpawnSpriteRenderMode,
 } from "./enemy-sprite-renderer.js?v=20260621-secret-item-vram";
+import { layoutInteractionMarkers } from "./interaction-marker-layout.js?v=20260625-dice-icon-only";
+import { categoryLabel, drawMarker } from "./interaction-marker-visual.js?v=20260625-dice-icon-only";
 import { collectGravestoneRecords } from "./gravestone-overlay.js?v=20260621-render-restore20";
 import { layerVisible } from "./layer-state.js?v=20260621-render-restore20";
 
 const ENTRANCE_CODES = new Set([0x80, 0x82, 0x84, 0x86, 0x88]);
 const SECRET_SPRITE_CODES = new Set([0x02, 0x03, 0x0e, 0x0f, 0x10, 0x11, 0x12]);
-const COLORS = {
-  entrancePoints: { fill: "rgba(18, 39, 48, 0.9)", stroke: "#56d4dd" },
-  exitPoints: { fill: "rgba(42, 25, 48, 0.9)", stroke: "#d2a8ff" },
-  holePoints: { fill: "rgba(43, 28, 14, 0.9)", stroke: "#ffa657" },
-  secretTreasure: { fill: "rgba(10, 38, 24, 0.86)", stroke: "#7ee787" },
-  secretEnemies: { fill: "rgba(52, 18, 20, 0.88)", stroke: "#ff7b72" },
-  secretEntrances: { fill: "rgba(14, 30, 58, 0.88)", stroke: "#79c0ff" },
-  shovelSpots: { fill: "rgba(52, 42, 14, 0.9)", stroke: "#d29922" },
-  travelPoints: { fill: "rgba(30, 40, 18, 0.9)", stroke: "#a5d65a" },
-};
 
 /**
  * Draw hidden interaction markers onto the rendered group canvas.
@@ -44,8 +36,8 @@ export function drawInteractionOverlay(app, canvas, group, layers = {}, stageFil
     return 0;
   }
   const ctx = canvas.getContext("2d");
-  const records = collectInteractionRecords(app.sourceData, group, stageFilter)
-    .filter((record) => layerVisible(layers, record.layer) && record.layer !== "gravestones");
+  const records = layoutInteractionMarkers(collectInteractionRecords(app.sourceData, group, stageFilter)
+    .filter((record) => layerVisible(layers, record.layer) && record.layer !== "gravestones"));
   drawInteractionSprites(app, ctx, canvas, records);
   for (const record of records) {
     if (!record.renderable) {
@@ -61,8 +53,12 @@ export function inspectInteractionAt(state, worldX, worldY) {
   }
   let match = null;
   let bestDistance = Infinity;
-  for (const record of collectInteractionRecords(state.app.sourceData, state.group, state.enemyStage || "first")) {
-    if (!layerVisible(state.layers, record.layer) || !pointInBounds(worldX, worldY, record.bounds)) {
+  const records = layoutInteractionMarkers(collectInteractionRecords(
+    state.app.sourceData, state.group, state.enemyStage || "first").filter((record) => (
+    layerVisible(state.layers, record.layer)
+  )));
+  for (const record of records) {
+    if (!pointInBounds(worldX, worldY, record.bounds)) {
       continue;
     }
     const distance = Math.hypot(worldX - record.centerX, worldY - record.centerY);
@@ -202,7 +198,7 @@ function collectNavigationRecords(area, originX, originY, navigation) {
 }
 
 function pushNavigationRecord(records, area, originX, originY, entry, layer, list, index) {
-  if (entry && !entry.deleted) {
+  if (entry && !entry.deleted && (list !== "exits" || entry.room < 0x1000)) {
     records.push(buildNavigationRecord(area, originX, originY, entry, layer, list, index));
   }
 }
@@ -220,6 +216,7 @@ function buildNavigationRecord(area, originX, originY, entry, layer, navigationL
     centerY: y,
     code: entry.index ?? entry.entranceId ?? entry.room ?? null,
     displayName: entry.displayName,
+    door: entry.door || null,
     gridX: entry.gridX ?? null,
     gridY: entry.gridY ?? null,
     id: navigationId(entry),
@@ -323,59 +320,6 @@ function spriteRecord(record) {
     name: record.spriteName || record.name,
     oamFlags: record.oamFlags,
   };
-}
-
-function drawMarker(ctx, record) {
-  const color = COLORS[record.layer] || COLORS.secretTreasure;
-  ctx.save();
-  ctx.translate(record.x, record.y);
-  const label = markerLabel(record);
-  ctx.font = "8px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-  const width = Math.max(26, Math.min(88, ctx.measureText(label).width + 10));
-  ctx.fillStyle = color.fill;
-  ctx.strokeStyle = color.stroke;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.rect(-width / 2, -8, width, 16);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "#f8fff5";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(label, 0, 0);
-  ctx.restore();
-}
-
-function markerLabel(record) {
-  if (record.layer === "shovelSpots") {
-    return "Flute";
-  }
-  if (record.layer === "entrancePoints") {
-    return `Ent ${record.id}`;
-  }
-  if (record.layer === "holePoints") {
-    return `Hole ${record.id}`;
-  }
-  if (record.layer === "exitPoints") {
-    return `Exit ${record.id}`;
-  }
-  if (record.layer === "travelPoints") {
-    return String(record.displayName || "Travel").slice(0, 10);
-  }
-  return String(record.displayName || record.name || "?").slice(0, 10);
-}
-
-function categoryLabel(layer) {
-  return {
-    secretTreasure: "secret treasure",
-    secretEnemies: "secret sprite",
-    secretEntrances: "secret entrance/trigger",
-    shovelSpots: "shovel spot",
-    travelPoints: "travel point",
-    entrancePoints: "overworld entrance",
-    holePoints: "fall hole",
-    exitPoints: "dungeon exit",
-  }[layer] || "interaction";
 }
 
 function hitBounds(x, y, renderable) {

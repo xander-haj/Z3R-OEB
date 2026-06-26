@@ -133,3 +133,10 @@ export function runModWorkflow(modId, action) {
 export function dumpBaseOverworld() {
   return postJson("/api/overworld-dump/create", {});
 }
+
+/**
+ * Create the full editor dat-dump through restool.py --editor-assets.
+ */
+export function dumpEditorAssets() {
+  return postJson("/api/editor-assets/create", {});
+}

@@ -7,6 +7,7 @@ import {
   LISTS,
   allocationError,
   allocationRequest,
+  areaMax,
   clampNumber,
   clampRecordToArea,
   defaultGridRecord,
@@ -56,7 +57,7 @@ export function syncNavigationAllocationControls(state, info = state?.selected) 
 }
 
 function addNavigationRecord() {
-  const request = allocationRequest(fields());
+  const request = allocationRequest(fields(), null, boundState);
   const selection = boundState?.navigationAllocationSelection;
   const source = selectedCompatibleRecord(boundState, selection, request.type);
   if (!source && !["entrance", "hole"].includes(request.type)) {
@@ -118,7 +119,7 @@ function applyNavigationAllocation() {
     boundActions.setStatus("Select a navigation record first");
     return;
   }
-  const request = allocationRequest(fields(), selection.area);
+  const request = allocationRequest(fields(), selection.area, boundState);
   if (LISTS[request.type] !== selection.navigationList) {
     boundActions.setStatus("Allocation type must match the selected navigation list");
     return;
@@ -143,7 +144,7 @@ function applyNavigationAllocation() {
 function moveNavigationRecord() {
   const selection = boundState?.navigationAllocationSelection;
   const before = selection ? navigationRecord(boundState, selection) : null;
-  const area = clampNumber(fields().navAllocAreaInput.value, 0, 159);
+  const area = clampNumber(fields().navAllocAreaInput.value, 0, areaMax(boundState));
   if (!before) {
     boundActions.setStatus("Select a navigation record first");
     return;

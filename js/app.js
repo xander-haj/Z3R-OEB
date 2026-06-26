@@ -7,26 +7,26 @@ import { buildMapGroups } from "../viewer/js/map-groups.js?v=20260621-render-res
 import { loadSourceData } from "../viewer/js/source-parser.js?v=20260621-render-restore20";
 import { OverworldMapCache } from "../viewer/js/overworld-map.js?v=20260621-render-restore20";
 import { TilesetCache } from "../viewer/js/tilesets.js?v=20260621-render-restore20";
-import { createMod, listMods, loadMod, overworldDumpStatus, saveAssetLibrary, saveMod } from "./api.js";
+import { createMod, listMods, loadMod, saveAssetLibrary, saveMod } from "./api.js";
 import {
   bindAssetPanel, createDefaultAssetLibrary, loadAssetLibraryDocument, saveTileAsset,
   selectedAssetMap32,
 } from "./asset-library.js?v=20260621-render-restore20";
-import { bindCanvas, draw, fitToView } from "./canvas-view.js?v=20260621-render-restore20";
+import { bindCanvas, draw, fitToView } from "./canvas-view.js?v=20260626-control-shortcuts";
 import {
   bindTileContextMenu, showPaintContextMenu, showTileContextMenu,
 } from "./context-menu.js?v=20260621-render-restore20";
+import { ensureBaseDumpAvailable } from "./dump-availability.js?v=20260625-editor-db";
+import {
+  applyEditorDatabaseToSourceData, editorDatabaseStatus, loadEditorDatabase,
+} from "./editor-database.js?v=20260625-sprite-markers";
 import {
   bindEnemyToggle as bindSpriteToggle, inspectEnemyAt as inspectSpriteAt,
-} from "./enemy-overlay.js?v=20260621-secret-item-vram";
+} from "./enemy-overlay.js?v=20260625-sprite-markers";
 import { bindGuideControls } from "./guide.js?v=20260621-guide-tabs";
-import { inspectInteractionAt } from "./interaction-overlay.js?v=20260621-secret-item-vram";
+import { inspectInteractionAt } from "./interaction-overlay.js?v=20260625-dice-icon-only";
 import { bindLayerControls } from "./layer-controls.js?v=20260621-render-restore20";
-import { bindMetadataControls, syncMetadataControls } from "./metadata-controls.js?v=20260621-properties-tabs";
-import {
-  applyGravestonePatchDocument, applyMetadataPatchDocument, exportGravestonePatch,
-  exportMetadataPatch, snapshotMetadata,
-} from "./metadata-mod-export.js?v=20260621-render-restore20";
+import { bindMetadataControls, syncMetadataControls } from "./metadata-controls.js?v=20260626-tab-toggle";
 import * as terrainMod from "./mod-export.js?v=20260621-render-restore20";
 import {
   paintNavigationSelection, selectedNavigationMove,
@@ -37,27 +37,32 @@ import {
   initializeTransformData,
 } from "./map32-transform-data.js?v=20260621-render-restore20";
 import { bindMap32TransformControls } from "./map32-transforms.js?v=20260621-render-restore20";
-import { bindModMenu } from "./mod-menu.js?v=20260621-mod-menu";
-import { createHistory, recordCommand, redo, undo } from "./operations.js?v=20260621-render-restore20";
+import { bindModMenu } from "./mod-menu.js?v=20260626-control-shortcuts";
+import { createHistory, recordCommand, redo, undo } from "./operations.js?v=20260625-dialogue-tab";
 import {
   fillMods, readPatchEditors, renderPatchEditors, setStatus, updateInspector,
-} from "./panels.js?v=20260621-render-restore20";
+} from "./panels.js?v=20260625-dialogue-tab";
 import { bindSidePanels, openAssetsPanel, openPropertiesPanel } from "./side-panels.js?v=20260621-panel-layout";
 import { saveSpriteAsset, selectedSpriteAsset } from "./sprite-assets.js?v=20260621-render-restore20";
 import { paintSpriteAsset } from "./sprite-mod-export.js?v=20260621-render-restore20";
 import { selectionStatus } from "./tile-status.js?v=20260621-render-restore20";
 import { bindToolbar, bindWorldTabs } from "./toolbar.js?v=20260621-render-restore20";
-import { createWorkbenchRenderer } from "./workbench-render.js?v=20260621-render-restore20";
+import {
+  applyLayerPatchDocuments,
+  exportLayerPatchDocuments,
+  snapshotLayerBaselines,
+} from "./workbench-layer-patches.js?v=20260625-dialogue-tab";
+import { createWorkbenchRenderer } from "./workbench-render.js?v=20260626-paint-settings";
 const state = {
   dumpPath: "assets/overworld_dump",
-  assets: null,
-  sourceData: null,
-  app: null,
+  assets: null, editorDb: null,
+  sourceData: null, app: null,
   groups: null,
   group: null,
   worldCanvas: null,
   baseSnapshot: null,
   baseMetadataSnapshot: null,
+  baseDialogueSnapshot: null,
   history: createHistory(),
   currentMod: null,
   manifest: null,
@@ -88,20 +93,11 @@ const rerender = createWorkbenchRenderer(state);
 async function main() {
   bindControls();
   await refreshMods();
-  if (!(await ensureBaseDumpAvailable())) return;
+  if (!(await ensureBaseDumpAvailable(setStatus))) return;
   await loadDump("assets/overworld_dump");
   loadAssetLibraryDocument(state, null);
   renderPatchEditors({});
-  setStatus("Ready");
-}
-
-async function ensureBaseDumpAvailable() {
-  const dumpStatus = await overworldDumpStatus();
-  if (dumpStatus.exists) {
-    return true;
-  }
-  setStatus("Base overworld dump missing. Open Project Menu and dump base overworld.");
-  return false;
+  setStatus(editorDatabaseStatus(state.editorDb));
 }
 
 /**
@@ -116,11 +112,14 @@ async function ensureBaseDumpAvailable() {
 async function loadDump(dumpPath, resetBase = true) {
   setStatus("Loading dump");
   state.dumpPath = dumpPath;
-  const [assets, sourceData] = await Promise.all([
+  const [assets, sourceData, editorDb] = await Promise.all([
     ZeldaAssets.load("", dumpPath),
     loadSourceData("", dumpPath),
+    loadEditorDatabase("", "assets/dat-dump"),
   ]);
+  applyEditorDatabaseToSourceData(sourceData, editorDb);
   state.assets = assets;
+  state.editorDb = editorDb;
   state.sourceData = sourceData;
   state.app = {
     assets,
@@ -136,7 +135,7 @@ async function loadDump(dumpPath, resetBase = true) {
   state.group = state.groups.light;
   if (resetBase) {
     state.baseSnapshot = terrainMod.snapshotMap32(assets);
-    state.baseMetadataSnapshot = snapshotMetadata(sourceData);
+    snapshotLayerBaselines(state);
     state.history = createHistory();
   }
   await rerender();
@@ -225,7 +224,10 @@ async function handleCreateMod() {
 }
 
 async function handleLoadBaseDump() {
-  if (await ensureBaseDumpAvailable()) await loadDump("assets/overworld_dump");
+  if (await ensureBaseDumpAvailable(setStatus)) {
+    await loadDump("assets/overworld_dump");
+    setStatus(editorDatabaseStatus(state.editorDb));
+  }
 }
 
 /**
@@ -243,7 +245,7 @@ async function handleModSelect() {
     loadAssetLibraryDocument(state, null);
     return;
   }
-  if (!(await ensureBaseDumpAvailable())) {
+  if (!(await ensureBaseDumpAvailable(setStatus))) {
     return;
   }
   const data = await loadMod(id);
@@ -271,8 +273,7 @@ function loadModPayload(mod) {
     mod.patches?.["patches/terrain.json"],
     state.map32TransformState.map32Ids,
   );
-  applyMetadataPatchDocument(state.sourceData, mod.patches?.["patches/metadata.json"]);
-  applyGravestonePatchDocument(state.sourceData, mod.patches?.["patches/gravestones.json"]);
+  applyLayerPatchDocuments(state, mod.patches || {});
   rerender();
 }
 
@@ -340,7 +341,7 @@ function handlePickTile(info) {
  * Update the inspector panel and map-header controls from one selection.
  */
 function handleInspectorUpdate(info) {
-  updateInspector(info, state.inspectGrid);
+  updateInspector(info, state.inspectGrid, state.editorDb);
   syncMetadataControls(state, info);
 }
 
@@ -373,10 +374,7 @@ async function handleSave() {
   patches["patches/map32-definitions.json"] =
     exportMap32TransformPatch(state, patches["patches/map32-definitions.json"]);
   patches["patches/terrain.json"] = terrainMod.exportTerrainPatch(state.baseSnapshot, state.assets);
-  patches["patches/metadata.json"] =
-    exportMetadataPatch(state.baseMetadataSnapshot, state.sourceData, patches["patches/metadata.json"]);
-  patches["patches/gravestones.json"] = exportGravestonePatch(
-    state.baseMetadataSnapshot?.gravestones, state.sourceData, patches["patches/gravestones.json"]);
+  exportLayerPatchDocuments(state, patches);
   await saveMod(state.currentMod, { manifest: state.manifest, patches });
   setStatus(`Saved ${state.currentMod}`);
 }

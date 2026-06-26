@@ -1,16 +1,29 @@
-/* Sub-tab controls for the Properties panel. */
+/* Sub-tab controls and dense Inspect layout for the Properties panel. */
 
-.property-subtabs {
+#rightPanel {
+  width: min(480px, calc(100% - 72px));
+}
+
+.property-tab-controls {
   background: #171c16;
   border-bottom: 1px solid #2e352d;
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: -2px 0 12px;
   padding: 0 0 10px;
   position: sticky;
   top: -12px;
   z-index: 3;
+}
+
+.property-subtabs {
+  display: grid;
+  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 6px;
+}
+
+.property-subtabs[data-property-tabs-mode="compact"] {
+  grid-template-columns: max-content;
+  justify-content: start;
 }
 
 .property-subtabs button {
@@ -20,6 +33,25 @@
   padding: 5px 6px;
   text-align: left;
   white-space: normal;
+}
+
+.property-tab-toggle {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  font-size: 12px;
+  min-height: 28px;
+  width: 100%;
+}
+
+.property-tab-toggle svg {
+  fill: none;
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  width: 18px;
 }
 
 .property-subsection[hidden] {
@@ -36,4 +68,56 @@
 
 .interaction-toggle svg {
   flex: 0 0 auto;
+}
+
+.dialogue-editor textarea {
+  border-radius: 4px;
+  min-height: 92px;
+  resize: vertical;
+  width: 100%;
+}
+
+#inspectorRows {
+  background: #10130f;
+  border: 1px solid #2e352d;
+  border-radius: 6px;
+  display: grid;
+  gap: 0;
+  grid-template-columns: minmax(92px, 32%) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+#inspectorRows dt,
+#inspectorRows dd {
+  border-top: 1px solid #263024;
+  min-width: 0;
+  padding: 7px 9px;
+}
+
+#inspectorRows dt:first-of-type,
+#inspectorRows dd:first-of-type {
+  border-top: 0;
+}
+
+#inspectorRows dt {
+  background: #151b14;
+  color: #b8c5b3;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+#inspectorRows dd {
+  color: #eef2ec;
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+#inspectorRows .stage-chip {
+  font-size: 11px;
+  line-height: 1.1;
+  padding: 2px 5px;
 }

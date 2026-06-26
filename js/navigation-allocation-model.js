@@ -3,10 +3,15 @@
  */
 
 import { parseNumber } from "./operations.js?v=20260621-render-restore20";
+import {
+  areaMax as dataAreaMax,
+  birdTravelCapacity,
+  firstFreeAllocation,
+  slotMaxForType,
+  specialRoomMax,
+} from "./navigation-allocation-capacity.js?v=20260625-editor-db";
 
 export const LISTS = { travel: "travel", entrance: "entrances", hole: "holes", exit: "exits", special: "exits" };
-
-const LIMITS = { bird: 9, entrance: 129, hole: 19, exit: 0x4f, special: 16 };
 
 /**
  * Return a mutable navigation list, creating containers when requested.
@@ -61,9 +66,9 @@ export function deletedSlotLocation(state, type, slot) {
  */
 export function targetArea(state, info) {
   if (Number.isFinite(info?.area)) {
-    return clamp(info.area, 0, 159);
+    return clamp(info.area, 0, areaMax(state));
   }
-  return Number.isFinite(state?.selected?.area) ? clamp(state.selected.area, 0, 159) : null;
+  return Number.isFinite(state?.selected?.area) ? clamp(state.selected.area, 0, areaMax(state)) : null;
 }
 
 /**
@@ -95,14 +100,15 @@ export function selectedCompatibleRecord(state, selection, type) {
 /**
  * Build one allocation request from form values.
  */
-export function allocationRequest(fields, forcedArea = null) {
+export function allocationRequest(fields, forcedArea = null, state = null) {
   const type = fields.navAllocTypeInput.value;
-  const area = forcedArea ?? clampNumber(fields.navAllocAreaInput.value, 0, 159);
+  const area = forcedArea ?? clampNumber(fields.navAllocAreaInput.value, 0, areaMax(state));
   return {
     area,
+    birdTravelCapacity: birdTravelCapacity(state),
     type,
-    slot: clampNumber(fields.navAllocSlotInput.value, 0, slotMax(type)),
-    room: clampNumber(fields.navAllocRoomInput.value, 0x180, 0x18f),
+    slot: clampNumber(fields.navAllocSlotInput.value, 0, slotMax(type, state)),
+    room: clampNumber(fields.navAllocRoomInput.value, 0x180, specialRoomMax(state)),
   };
 }
 
@@ -135,8 +141,8 @@ export function roomValue(state, type, record) {
 export function recordForAllocation(record, request) {
   const result = clone(record);
   if (request.type === "travel" && result.whirlpoolSrcArea === undefined) {
-    if (request.slot > 8) {
-      throw new Error("Bird travel slots must be 0..8");
+    if (request.slot >= request.birdTravelCapacity) {
+      throw new Error(`Bird travel slots must be 0..${request.birdTravelCapacity - 1}`);
     }
     result.birdTravelId = request.slot;
     result.displayName = `Bird travel ${request.slot}`;
@@ -208,17 +214,20 @@ export function clampRecordToArea(state, record, area) {
 /**
  * Return the highest legal slot/source value for one type.
  */
-export function slotMax(type) {
-  if (type === "travel") {
-    return 159;
-  }
-  if (type === "entrance") {
-    return 128;
-  }
-  if (type === "hole") {
-    return 18;
-  }
-  return 78;
+export function slotMax(type, state = null) {
+  return slotMaxForType(state, type);
+}
+
+/**
+ * Return the highest legal overworld area id.
+ *
+ * Parameters:
+ *   state: Shared Workbench state containing editorDb.
+ * Returns:
+ *   Maximum overworld area id.
+ */
+export function areaMax(state = null) {
+  return dataAreaMax(state);
 }
 
 /**
@@ -302,16 +311,7 @@ function keyForType(type, row) {
  */
 function firstFree(state, type) {
   const used = usedNavigationKeys(state, type, null);
-  const limit = type === "special" ? LIMITS.special : type === "travel" ? LIMITS.bird :
-    LIMITS[type] || LIMITS.exit;
-  const base = type === "special" ? 0x180 : 0;
-  for (let value = 0; value < limit; value += 1) {
-    const key = type === "special" ? value + base : value;
-    if (!used.has(key)) {
-      return key;
-    }
-  }
-  return base;
+  return firstFreeAllocation(state, type, used);
 }
 
 /**

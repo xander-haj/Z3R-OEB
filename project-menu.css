@@ -1,0 +1,363 @@
+/* Project Menu modal layout and command-control styling. */
+
+.modal-overlay {
+  align-items: center;
+  background: rgba(8, 11, 8, 0.62);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 28px;
+  position: fixed;
+  z-index: 34;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.mod-menu-panel {
+  background: #171c16;
+  border: 1px solid #52614c;
+  border-radius: 8px;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  line-height: 1.35;
+  max-height: min(88vh, 820px);
+  overflow: hidden;
+  width: min(1120px, calc(100vw - 56px));
+}
+
+.modal-header {
+  align-items: center;
+  background: #151a14;
+  border-bottom: 1px solid #2e352d;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 14px 18px;
+}
+
+.modal-title-block {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.modal-title-block h2 {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.modal-header-note {
+  color: #b9c6b4;
+  font-size: 12px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.modal-header-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.modal-tabs {
+  background: #111610;
+  border-bottom: 1px solid #2e352d;
+  display: flex;
+  gap: 6px;
+  padding: 8px 18px 0;
+}
+
+.mod-menu-panel .modal-tabs button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  color: #b9c6b4;
+  min-height: 32px;
+  padding: 7px 14px;
+}
+
+.mod-menu-panel .modal-tabs button.active {
+  background: #171c16;
+  border-color: #3e4a3a;
+  color: #f0f6ed;
+}
+
+.mod-menu-content {
+  max-height: calc(min(88vh, 820px) - 104px);
+  overflow: auto;
+  padding: 20px;
+}
+
+.mod-menu-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.05fr);
+}
+
+.controls-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(360px, 1.05fr);
+}
+
+.menu-card {
+  background: #10130f;
+  border: 1px solid #2e352d;
+  border-radius: 6px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.menu-card h3 {
+  font-size: 15px;
+  line-height: 1.2;
+  margin-bottom: 0;
+}
+
+.menu-field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.menu-field-label,
+.command-group-title {
+  color: #b9c6b4;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.mod-menu-panel button,
+.mod-menu-panel input,
+.mod-menu-panel select {
+  border-radius: 5px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.mod-menu-panel button {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.mod-menu-panel input,
+.mod-menu-panel select {
+  min-height: 36px;
+  padding: 6px 10px;
+  width: 100%;
+}
+
+.mod-menu-panel button:focus-visible,
+.mod-menu-panel input:focus-visible,
+.mod-menu-panel select:focus-visible {
+  border-color: #9fc58d;
+  box-shadow: 0 0 0 2px rgba(159, 197, 141, 0.28);
+  outline: 0;
+}
+
+.menu-button-primary {
+  background: #2d4a34;
+  border-color: #7fa873;
+}
+
+.menu-button-secondary {
+  background: #1b241b;
+  border-color: #4f6049;
+}
+
+.menu-button-muted {
+  background: #20251f;
+  border-color: #3f493c;
+}
+
+.settings-card {
+  gap: 16px;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+}
+
+.modal-note {
+  color: #b9c6b4;
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.modal-note code {
+  background: #171c16;
+  border: 1px solid #44503f;
+  border-radius: 4px;
+  color: #eef2ec;
+  padding: 1px 5px;
+}
+
+.command-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  position: relative;
+}
+
+.menu-button-row,
+.command-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.command-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.command-group {
+  display: grid;
+  gap: 8px;
+}
+
+.command-row button {
+  padding-right: 36px;
+  width: 100%;
+}
+
+.setting-check {
+  align-items: center;
+  background: #151a14;
+  border: 1px solid #2e352d;
+  border-radius: 5px;
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 10px;
+}
+
+.settings-check-wide {
+  grid-column: 1 / -1;
+}
+
+.setting-check input {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.shortcuts-card {
+  gap: 16px;
+}
+
+.shortcut-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shortcut-field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.shortcut-input {
+  background: #151a14;
+  border-color: #3f493c;
+  color: #eef2ec;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  justify-content: flex-start;
+  min-height: 36px;
+  width: 100%;
+}
+
+.shortcut-input[data-recording="true"] {
+  border-color: #9fc58d;
+  box-shadow: inset 0 0 0 1px rgba(159, 197, 141, 0.45);
+  color: #d9ffd1;
+}
+
+#resetShortcutsButton {
+  justify-self: start;
+}
+
+.success-indicator {
+  align-items: center;
+  background: #2f8f46;
+  border: 1px solid #7ee787;
+  border-radius: 50%;
+  display: inline-flex;
+  height: 22px;
+  justify-content: center;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+}
+
+.success-indicator[hidden] {
+  display: none;
+}
+
+.success-indicator svg {
+  fill: none;
+  height: 14px;
+  stroke: #f2fff0;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  width: 14px;
+}
+
+.command-output {
+  background: #10130f;
+  border: 1px solid #2e352d;
+  border-radius: 4px;
+  color: #dbe5d7;
+  font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  max-height: 180px;
+  min-height: 64px;
+  overflow: auto;
+  padding: 8px;
+  white-space: pre-wrap;
+}
+
+.command-output:empty {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .modal-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .modal-header-actions {
+    justify-content: flex-start;
+  }
+
+  .mod-menu-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .controls-grid,
+  .settings-grid,
+  .shortcut-grid {
+    grid-template-columns: 1fr;
+  }
+}

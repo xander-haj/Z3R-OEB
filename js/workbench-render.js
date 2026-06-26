@@ -3,12 +3,12 @@
  */
 
 import { renderGroup } from "../viewer/js/renderer.js?v=20260621-render-restore20";
-import { draw } from "./canvas-view.js?v=20260621-render-restore20";
+import { draw } from "./canvas-view.js?v=20260626-paint-settings";
 import {
   drawEnemyOverlay as drawSpriteOverlay,
-} from "./enemy-overlay.js?v=20260621-secret-item-vram";
+} from "./enemy-overlay.js?v=20260625-sprite-markers";
 import { drawGravestoneOverlay } from "./gravestone-overlay.js?v=20260621-render-restore20";
-import { drawInteractionOverlay } from "./interaction-overlay.js?v=20260621-secret-item-vram";
+import { drawInteractionOverlay } from "./interaction-overlay.js?v=20260625-dice-icon-only";
 import { ensureLayerState, layerVisible } from "./layer-state.js?v=20260621-render-restore20";
 
 /**

@@ -7,6 +7,10 @@ import {
   syncEntranceHoleControls,
 } from "./entrance-hole-controls.js?v=20260621-render-restore20";
 import {
+  bindDialogueControls,
+  syncDialogueControls,
+} from "./dialogue-controls.js?v=20260625-dialogue-tab";
+import {
   bindHeaderControls,
   syncHeaderControls,
 } from "./header-controls.js?v=20260621-render-restore20";
@@ -50,7 +54,7 @@ import {
 import {
   bindPropertyPanelTabs,
   syncPropertyPanelTab,
-} from "./property-panel-tabs.js?v=20260621-properties-tabs";
+} from "./property-panel-tabs.js?v=20260626-tab-toggle";
 
 /**
  * Bind all metadata controls to shared Workbench state.
@@ -67,6 +71,7 @@ export function bindMetadataControls(state, actions) {
   bindNavigationAllocationControls(state, actions);
   bindNavigationRecordControls(state, actions);
   bindEntranceHoleControls(state, actions);
+  bindDialogueControls(state, actions);
   bindSecretItemControls(state, actions);
   bindSpriteInfoControls(state, actions);
   bindSpecialVisualControls(state, actions);
@@ -92,6 +97,7 @@ export function syncMetadataControls(state, info = state?.selected) {
   syncNavigationAllocationControls(state, info);
   syncNavigationRecordControls(state, info);
   syncEntranceHoleControls(state, info);
+  syncDialogueControls(state, info);
   syncSecretItemControls(state, info);
   syncSpriteInfoControls(state, info);
   syncSpecialVisualControls(state, info);

@@ -38,6 +38,7 @@ PATCH_FILES = {
     "palettes": "patches/palettes.json",
     "metadata": "patches/metadata.json",
     "gravestones": "patches/gravestones.json",
+    "dialogue": "patches/dialogue.json",
 }
 
 
@@ -122,6 +123,9 @@ class OverworldEditorHandler(SimpleHTTPRequestHandler):
                 return
             if self.path == "/api/overworld-dump/create":
                 self.run_restool_base_dump()
+                return
+            if self.path == "/api/editor-assets/create":
+                self.run_restool_editor_assets()
                 return
             self.send_error(HTTPStatus.NOT_FOUND, "Unknown API route")
         except (OSError, ValueError, json.JSONDecodeError) as error:
@@ -214,6 +218,12 @@ class OverworldEditorHandler(SimpleHTTPRequestHandler):
             "python3",
             "assets/restool.py",
             "--dump-overworld",
+        ], restart_launcher=True))
+
+    def run_restool_editor_assets(self) -> None:
+        """Run the allowed restool editor-assets dump command."""
+        self.send_json(self.run_tool_command([
+            "python3", "assets/restool.py", "--editor-assets",
         ], restart_launcher=True))
 
     def run_tool_command(self, args: list[str], restart_launcher: bool = False) -> dict[str, Any]:

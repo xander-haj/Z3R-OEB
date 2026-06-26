@@ -9,6 +9,7 @@ import {
   applyNavigationMoveCommand,
   applyNavigationRecordCommand,
 } from "./command-navigation-record.js?v=20260621-render-restore20";
+import { applyDialogueCommand } from "./dialogue-mod-export.js?v=20260625-dialogue-tab";
 import { applyHeaderValue } from "./header-mod-export.js?v=20260621-render-restore20";
 
 /**
@@ -61,6 +62,10 @@ export function applyEdit(target, command, direction) {
   }
   if (command.kind === "gravestone.set-record") {
     applyGravestoneCommand(target, command, direction);
+    return;
+  }
+  if (command.kind === "dialogue.set-text") {
+    applyDialogueCommand(target, command, direction);
     return;
   }
   if (command.kind === "metadata.set-sprite-info") {

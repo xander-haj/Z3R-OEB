@@ -13,6 +13,10 @@ import {
   ensureEditorEnemySprites,
   getEditorSpawnSpriteRenderMode,
 } from "./enemy-sprite-renderer.js?v=20260621-secret-item-vram";
+import {
+  drawSpriteMarker,
+  shouldDrawSpriteMarker,
+} from "./enemy-marker-visual.js?v=20260625-sprite-markers";
 import { spritePlacementDisplayName, spritePlacementRole } from "./sprite-labels.js?v=20260621-render-restore20";
 const STAGE_COLORS = {
   beginning: "#f4c35d",
@@ -116,8 +120,8 @@ export function drawEnemyOverlay(app, canvas, group, stageFilter = "first", laye
   }
   if (showMarkers) {
     for (const spawn of spawns) {
-      if (!showArt || spawn.renderKind !== "oam") {
-        drawSpawnFallback(ctx, spawn);
+      if (shouldDrawSpriteMarker(spawn, showArt)) {
+        drawSpriteMarker(ctx, spawn);
       }
     }
   }
@@ -333,38 +337,10 @@ function renderBuckets(spawns) {
 }
 
 /**
- * Draw a non-circular fallback badge for sprites whose OAM recipe is not in the renderer yet.
- *
- * Parameters:
- *   ctx: Offscreen world canvas context.
- *   spawn: Spawn record with center and id fields.
- * Returns:
- *   None.
- */
-function drawSpawnFallback(ctx, spawn) {
-  const color = spawn.stageColors[0]?.color || "#d8f2cf";
-  ctx.save();
-  ctx.translate(spawn.centerX, spawn.centerY);
-  ctx.rotate(Math.PI / 4);
-  ctx.lineWidth = 2;
-  ctx.fillStyle = "rgba(9, 11, 9, 0.78)";
-  ctx.strokeStyle = color;
-  ctx.fillRect(-8, -8, 16, 16);
-  ctx.strokeRect(-8, -8, 16, 16);
-  ctx.rotate(-Math.PI / 4);
-  ctx.fillStyle = "#eef2ec";
-  ctx.font = "9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(spawn.id.slice(2), 0, 0);
-  ctx.restore();
-}
-
-/**
  * Return a conservative hit box around the rendered or fallback spawn glyph.
  */
 function hitBounds(baseX, baseY, renderable) {
-  const padding = renderable ? 10 : 8;
+  const padding = renderable ? 12 : 14;
   const width = 16;
   const height = 16;
   return {
