@@ -2,9 +2,13 @@
  * Foldered editor asset library panel.
  */
 
-import { parseNumber } from "./operations.js?v=20260621-render-restore20";
 import { ensureFolderPath } from "./asset-folder-model.js";
-import { renderAssetLibraryView } from "./asset-library-view.js";
+import { renderAssetLibraryView } from "./asset-library-view.js?v=20260626-tile-asset-paint";
+import {
+  buildTileAsset,
+  selectedTileMap32Value,
+  terrainAssetPayload,
+} from "./asset-tile-model.js?v=20260626-tile-asset-paint";
 
 const ASSET_FORMAT = "zelda3-overworld-map32-library-v1";
 
@@ -63,7 +67,7 @@ export function bindAssetPanel(state, actions) {
 }
 
 /**
- * Save an inspected map32 tile into the active asset folder.
+ * Save an inspected terrain tile into the active asset folder.
  *
  * Parameters:
  *   state: Shared Workbench state.
@@ -75,18 +79,7 @@ export function bindAssetPanel(state, actions) {
 export async function saveTileAsset(state, info, actions) {
   const library = ensureLibrary(state);
   const folder = activeFolder(library);
-  const tile = {
-    id: uniqueId("tile"),
-    name: `${hex(info.map32)} from ${hex(info.screen, 2)} ${info.map32X},${info.map32Y}`,
-    map32: `base:${hex(info.map32)}`,
-    preview: captureMap32Preview(state, info),
-    source: {
-      group: state.group.id,
-      screen: hex(info.screen, 2),
-      x: info.map32X,
-      y: info.map32Y,
-    },
-  };
+  const tile = buildTileAsset(state, info, uniqueId("tile"));
   folder.tiles.push(tile);
   library.selectedTileId = tile.id;
   renderAssetPanel(state);
@@ -104,8 +97,20 @@ export async function saveTileAsset(state, info, actions) {
  */
 export function selectedAssetMap32(state) {
   const tile = selectedTile(ensureLibrary(state));
-  const value = tile && (tile.kind || "map32") === "map32" ? parseMap32Ref(tile.map32) : null;
+  const value = selectedTileMap32Value(tile);
   return Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Return the selected saved terrain asset for paint mode.
+ *
+ * Parameters:
+ *   state: Shared Workbench state.
+ * Returns:
+ *   Object with terrain kind and numeric value, or null.
+ */
+export function selectedTerrainAsset(state) {
+  return terrainAssetPayload(selectedTile(ensureLibrary(state)));
 }
 
 /**
@@ -285,44 +290,6 @@ async function persistLibrary(state, actions, message) {
 }
 
 /**
- * Capture the exact selected 32x32 map32 square from the rendered overworld.
- *
- * Parameters:
- *   state: Shared Workbench state.
- *   info: Selected tile information from the map inspector.
- * Returns:
- *   Data URL preview image, or null when no rendered source exists.
- */
-function captureMap32Preview(state, info) {
-  if (!state.worldCanvas || !info) {
-    return null;
-  }
-  const rect = selectedMap32Rect(info);
-  const canvas = document.createElement("canvas");
-  canvas.width = 32;
-  canvas.height = 32;
-  const ctx = canvas.getContext("2d");
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(state.worldCanvas, rect.x, rect.y, 32, 32, 0, 0, 32, 32);
-  return canvas.toDataURL("image/png");
-}
-
-/**
- * Resolve selected map32 display bounds in rendered world pixels.
- *
- * Parameters:
- *   info: Selected tile information from the map inspector.
- * Returns:
- *   Rectangle object for the selected map32 cell.
- */
-function selectedMap32Rect(info) {
-  if (info.displayMap32X !== undefined && info.displayMap32Y !== undefined) {
-    return { x: info.displayMap32X, y: info.displayMap32Y };
-  }
-  return { x: info.worldTileX + info.map32X * 32, y: info.worldTileY + info.map32Y * 32 };
-}
-
-/**
  * Return the active save folder.
  *
  * Parameters:
@@ -353,21 +320,6 @@ function selectedTile(library) {
 }
 
 /**
- * Parse a saved map32 reference.
- *
- * Parameters:
- *   value: base:0x, hex, decimal, or number.
- * Returns:
- *   Numeric map32 id.
- */
-function parseMap32Ref(value) {
-  if (typeof value === "string" && value.startsWith("base:")) {
-    return parseNumber(value.slice(5));
-  }
-  return parseNumber(value);
-}
-
-/**
  * Create a portable asset id.
  *
  * Parameters:
@@ -379,17 +331,4 @@ function uniqueId(prefix) {
   const stamp = Date.now().toString(36);
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${stamp}-${random}`;
-}
-
-/**
- * Format a value as uppercase hex.
- *
- * Parameters:
- *   value: Numeric value.
- *   width: Hex digit count.
- * Returns:
- *   Hex string.
- */
-function hex(value, width = 4) {
-  return `0x${Number(value).toString(16).toUpperCase().padStart(width, "0")}`;
 }

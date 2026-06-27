@@ -2,6 +2,8 @@
  * Small context menu for map tile and sprite actions.
  */
 
+import { normalizeTileAssetGrid, tileAssetKindLabel } from "./asset-tile-model.js?v=20260626-tile-asset-paint";
+
 let currentTile = null;
 let currentPaint = null;
 let saveHandler = null;
@@ -37,25 +39,26 @@ export function bindTileContextMenu(handlers) {
  * Parameters:
  *   info: Tile information from the inspector.
  *   event: Mouse contextmenu event.
+ *   gridLevel: Active terrain inspection grid for tile saves.
  * Returns:
  *   None.
  */
-export function showTileContextMenu(info, event) {
+export function showTileContextMenu(info, event, gridLevel = "map32") {
   const menu = document.querySelector("#tileContextMenu");
   const host = menu.closest(".canvas-wrap");
   if (!host) {
     return;
   }
+  const assetGrid = normalizeTileAssetGrid(gridLevel);
   const rect = host.getBoundingClientRect();
-  currentTile = info;
+  currentTile = info.kind === "sprite" || info.kind === "enemy" ? info : { ...info, inspectGrid: assetGrid };
   currentPaint = null;
   menu.hidden = false;
   const saveButton = document.querySelector("#saveTileAssetButton");
   const paintButton = document.querySelector("#paintAssetButton");
   saveButton.hidden = false;
   paintButton.hidden = true;
-  saveButton.textContent =
-    info.kind === "sprite" || info.kind === "enemy" ? "Save Sprite To Assets" : "Save Tile To Assets";
+  saveButton.textContent = saveButtonLabel(info, assetGrid);
   menu.style.left = `${event.clientX - rect.left}px`;
   menu.style.top = `${event.clientY - rect.top}px`;
   keepMenuInBounds(menu, rect);
@@ -150,4 +153,20 @@ function keepMenuInBounds(menu, rect) {
   const maxTop = Math.max(0, rect.height - menu.offsetHeight - 8);
   menu.style.left = `${Math.min(Number.parseFloat(menu.style.left), maxLeft)}px`;
   menu.style.top = `${Math.min(Number.parseFloat(menu.style.top), maxTop)}px`;
+}
+
+/**
+ * Choose the context-menu save label for sprite or terrain selections.
+ *
+ * Parameters:
+ *   info: Tile or sprite selection object.
+ *   gridLevel: Normalized terrain grid level.
+ * Returns:
+ *   Button text.
+ */
+function saveButtonLabel(info, gridLevel) {
+  if (info.kind === "sprite" || info.kind === "enemy") {
+    return "Save Sprite To Assets";
+  }
+  return `Save ${tileAssetKindLabel(gridLevel)} To Assets`;
 }

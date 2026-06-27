@@ -10,12 +10,12 @@ import { TilesetCache } from "../viewer/js/tilesets.js?v=20260621-render-restore
 import { createMod, listMods, loadMod, saveAssetLibrary, saveMod } from "./api.js";
 import {
   bindAssetPanel, createDefaultAssetLibrary, loadAssetLibraryDocument, saveTileAsset,
-  selectedAssetMap32,
-} from "./asset-library.js?v=20260621-render-restore20";
-import { bindCanvas, draw, fitToView } from "./canvas-view.js?v=20260626-control-shortcuts";
+  selectedTerrainAsset,
+} from "./asset-library.js?v=20260626-tile-asset-paint";
+import { bindCanvas, draw, fitToView } from "./canvas-view.js?v=20260626-tile-asset-paint";
 import {
   bindTileContextMenu, showPaintContextMenu, showTileContextMenu,
-} from "./context-menu.js?v=20260621-render-restore20";
+} from "./context-menu.js?v=20260626-tile-asset-paint";
 import { ensureBaseDumpAvailable } from "./dump-availability.js?v=20260625-editor-db";
 import {
   applyEditorDatabaseToSourceData, editorDatabaseStatus, loadEditorDatabase,
@@ -35,15 +35,15 @@ import {
   exportMap16TransformPatch,
   exportMap32TransformPatch,
   initializeTransformData,
-} from "./map32-transform-data.js?v=20260621-render-restore20";
+} from "./map32-transform-data.js?v=20260627-build-refs";
 import { bindMap32TransformControls } from "./map32-transforms.js?v=20260621-render-restore20";
 import { bindModMenu } from "./mod-menu.js?v=20260626-control-shortcuts";
 import { createHistory, recordCommand, redo, undo } from "./operations.js?v=20260625-dialogue-tab";
 import {
   fillMods, readPatchEditors, renderPatchEditors, setStatus, updateInspector,
-} from "./panels.js?v=20260625-dialogue-tab";
+} from "./panels.js?v=20260626-dev-console";
 import { bindSidePanels, openAssetsPanel, openPropertiesPanel } from "./side-panels.js?v=20260621-panel-layout";
-import { saveSpriteAsset, selectedSpriteAsset } from "./sprite-assets.js?v=20260621-render-restore20";
+import { saveSpriteAsset, selectedSpriteAsset } from "./sprite-assets.js?v=20260626-tile-asset-paint";
 import { paintSpriteAsset } from "./sprite-mod-export.js?v=20260621-render-restore20";
 import { selectionStatus } from "./tile-status.js?v=20260621-render-restore20";
 import { bindToolbar, bindWorldTabs } from "./toolbar.js?v=20260621-render-restore20";
@@ -176,12 +176,12 @@ function bindControls() {
     rerender,
     updateInspector: handleInspectorUpdate,
     onPick: handlePickTile, onEnemyPick: openPropertiesPanel, onInteractionPick: openPropertiesPanel,
-    onTileMenu: showTileContextMenu,
+    onTileMenu: (info, event) => showTileContextMenu(info, event, state.inspectGrid),
     onEnemyMenu: showTileContextMenu,
     onPaintMenu: showPaintContextMenu,
     getEnemyAt: inspectSpriteAt,
     getInteractionAt: inspectInteractionAt,
-    getPaintMap32: () => selectedAssetMap32(state),
+    getPaintTerrain: () => selectedTerrainAsset(state),
     getPaintNavigation: () => selectedNavigationMove(state),
     getPaintSprite: () => selectedSpriteAsset(state),
     onPaintNavigation: (selection, info, point) =>
@@ -361,7 +361,7 @@ function handlePaintSpriteAsset(asset, info, point) {
 }
 
 /**
- * Save the current sparse terrain diff and layer JSON patches.
+ * Save the current sparse terrain diff, layer JSON patches, and asset library.
  */
 async function handleSave() {
   if (!state.currentMod) {
@@ -376,6 +376,8 @@ async function handleSave() {
   patches["patches/terrain.json"] = terrainMod.exportTerrainPatch(state.baseSnapshot, state.assets);
   exportLayerPatchDocuments(state, patches);
   await saveMod(state.currentMod, { manifest: state.manifest, patches });
+  const assetData = await saveCurrentAssetLibrary(state.assetLibrary);
+  loadAssetLibraryDocument(state, assetData.assetLibrary);
   setStatus(`Saved ${state.currentMod}`);
 }
 

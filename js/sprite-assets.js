@@ -2,7 +2,7 @@
  * Saved asset helpers for overworld sprite placements.
  */
 
-import { loadAssetLibraryDocument, renderAssetPanel } from "./asset-library.js";
+import { loadAssetLibraryDocument, renderAssetPanel } from "./asset-library.js?v=20260626-tile-asset-paint";
 
 /**
  * Save a selected sprite spawn into the active asset folder.

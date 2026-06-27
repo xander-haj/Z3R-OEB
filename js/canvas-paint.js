@@ -3,6 +3,7 @@
  */
 
 import { applyCommand } from "./operations.js?v=20260621-render-restore20";
+import { paintedMap32Id } from "./tile-asset-paint.js?v=20260626-tile-asset-paint";
 
 /**
  * Paint the selected asset or marker move into a clicked map cell.
@@ -21,14 +22,14 @@ export function paintSelectedAsset(state, info, handlers, point) {
     handlers.onPaintSprite?.(sprite, info, point);
     return;
   }
-  paintMap32Asset(state, info, handlers);
+  paintTerrainAsset(state, info, handlers);
 }
 
 /**
- * Paint the selected saved map32 asset into the inspected map32 cell.
+ * Paint the selected saved terrain asset into the inspected map32 cell.
  */
-function paintMap32Asset(state, info, handlers) {
-  const after = handlers.getPaintMap32();
+function paintTerrainAsset(state, info, handlers) {
+  const after = paintedMap32Id(state, info, handlers.getPaintTerrain?.());
   if (after === null) {
     handlers.onPaintMissing();
     return;

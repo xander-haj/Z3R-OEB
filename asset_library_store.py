@@ -8,9 +8,16 @@ from pathlib import Path
 from typing import Any
 
 ASSET_LIBRARY_PATH = "assets/map32-library.json"
+# The format string stays at v1 so existing mod libraries continue to load after adding map16/map8.
 ASSET_LIBRARY_FORMAT = "zelda3-overworld-map32-library-v1"
 ASSET_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
 VALID_STAGES = {"beginning", "first", "second"}
+# Terrain asset kinds map to the JSON fields written by the browser asset library.
+TILE_ASSET_FIELDS = {
+    "map32": ("map32",),
+    "map16": ("map16",),
+    "map8": ("map8Word", "map8"),
+}
 
 
 def default_asset_library() -> dict:
@@ -43,7 +50,7 @@ def read_asset_library(mod_dir: Path) -> dict:
 
 
 def validate_asset_library(data: Any) -> dict:
-    """Validate a foldered map32/sprite asset library document.
+    """Validate a foldered terrain/sprite asset library document.
 
     Parameters:
         data: Candidate JSON value.
@@ -90,7 +97,7 @@ def validate_asset_folder(folder: Any, folder_ids: set[str], tile_ids: set[str])
 
 
 def validate_asset_tile(tile: Any, tile_ids: set[str]) -> None:
-    """Validate one saved map32 tile or sprite asset entry.
+    """Validate one saved terrain tile or sprite asset entry.
 
     Parameters are the candidate asset and seen-id set.
     Returns:
@@ -104,12 +111,14 @@ def validate_asset_tile(tile: Any, tile_ids: set[str]) -> None:
     tile_ids.add(tile_id)
     validate_text(tile.get("name"), "asset tile name", 96)
     kind = tile.get("kind", "map32")
-    if kind == "map32":
-        validate_map32_ref(tile.get("map32"))
+    if not isinstance(kind, str):
+        raise ValueError("Asset kind must be map32, map16, map8, or sprite.")
+    if kind in TILE_ASSET_FIELDS:
+        validate_tile_ref(tile_asset_ref(tile, kind), "%s asset reference" % kind)
     elif kind == "sprite":
         validate_sprite_asset(tile.get("sprite"))
     else:
-        raise ValueError("Asset kind must be map32 or sprite.")
+        raise ValueError("Asset kind must be map32, map16, map8, or sprite.")
     preview = tile.get("preview")
     if preview is not None:
         validate_preview(preview)
@@ -164,8 +173,30 @@ def validate_text(value: Any, label: str, limit: int) -> None:
         raise ValueError("%s must be a non-empty string up to %d characters." % (label, limit))
 
 
-def validate_map32_ref(value: Any) -> None:
-    """Validate a saved map32 reference."""
+def tile_asset_ref(tile: dict, kind: str) -> Any:
+    """Return the saved reference field for a terrain asset kind.
+
+    Parameters:
+        tile: Saved asset entry.
+        kind: Terrain asset kind.
+    Returns:
+        Stored reference value, or None when missing.
+    """
+    for field in TILE_ASSET_FIELDS[kind]:
+        if field in tile:
+            return tile[field]
+    return None
+
+
+def validate_tile_ref(value: Any, label: str) -> None:
+    """Validate a saved unsigned 16-bit terrain reference.
+
+    Parameters:
+        value: Candidate reference as a number, decimal string, hex string, or base-prefixed string.
+        label: Human-readable field name for validation errors.
+    Returns:
+        None.
+    """
     if type(value) is int and 0 <= value <= 0xffff:
         return
     if isinstance(value, str):
@@ -173,10 +204,10 @@ def validate_map32_ref(value: Any) -> None:
         try:
             parsed = int(raw, 16 if raw.lower().startswith("0x") else 10)
         except ValueError as error:
-            raise ValueError("Invalid map32 asset reference.") from error
+            raise ValueError("Invalid %s." % label) from error
         if 0 <= parsed <= 0xffff:
             return
-    raise ValueError("Map32 asset reference must resolve to 0x0000-0xffff.")
+    raise ValueError("%s must resolve to 0x0000-0xffff." % label)
 
 
 def validate_byte(value: Any, label: str) -> None:

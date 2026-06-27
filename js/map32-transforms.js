@@ -3,7 +3,7 @@
  */
 
 import { applyCommand } from "./operations.js?v=20260621-render-restore20";
-import { hex, transformedMap32Id } from "./map32-transform-data.js?v=20260621-render-restore20";
+import { hex, transformedMap32Id } from "./map32-transform-data.js?v=20260627-build-refs";
 import { selectedTileCells, tileCellKey } from "./tile-selection.js?v=20260621-render-restore20";
 
 const LABELS = {

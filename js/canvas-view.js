@@ -7,7 +7,7 @@ import {
   instantPaintEnabled,
   shouldStartCanvasPan,
 } from "./canvas-input-policy.js?v=20260626-control-shortcuts";
-import { paintSelectedAsset } from "./canvas-paint.js?v=20260626-paint-settings";
+import { paintSelectedAsset } from "./canvas-paint.js?v=20260626-tile-asset-paint";
 import { drawSelectedSprite } from "./canvas-selection-draw.js?v=20260626-paint-settings";
 import { handleWheelZoom } from "./canvas-zoom.js?v=20260626-control-tabs";
 import { AREA_GRID_LABEL_GUTTER, drawAreaGridLabels } from "./grid-labels.js";

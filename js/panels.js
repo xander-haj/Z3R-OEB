@@ -4,6 +4,7 @@
 
 import { defaultPatch } from "./patch-editor-defaults.js?v=20260625-editor-db";
 import { appendEditorDatabaseRows } from "./inspector-database-rows.js?v=20260625-exit-filter";
+import { recordStatusLog } from "./dev-console.js?v=20260626-dev-console";
 
 const PATCH_LABELS = {
   "patches/map32-definitions.json": "Map32 Definitions",
@@ -25,7 +26,10 @@ const PATCH_LABELS = {
  *   None.
  */
 export function setStatus(text) {
-  document.querySelector("#statusText").textContent = text;
+  const status = document.querySelector("#statusText");
+  status.textContent = text;
+  status.title = text;
+  recordStatusLog(text);
 }
 
 /**

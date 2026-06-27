@@ -3,6 +3,7 @@
  */
 
 import { folderPathOptions } from "./asset-folder-model.js";
+import { tileAssetDisplayLabel } from "./asset-tile-model.js?v=20260626-tile-asset-paint";
 
 /**
  * Render the asset library folder and tile controls.
@@ -126,7 +127,7 @@ function renderPreview(tile) {
 function renderTileLabel(tile) {
   const label = document.createElement("span");
   label.className = "asset-tile-label";
-  label.textContent = tile.kind === "sprite" ? `${tile.name} sprite` : `${tile.name} ${tile.map32}`;
+  label.textContent = tile.kind === "sprite" ? `${tile.name} sprite` : tileAssetDisplayLabel(tile);
   return label;
 }
 

@@ -39,7 +39,8 @@ export function initializeTransformData(state, patches = {}) {
  *   Patch document with generated map32 definitions included.
  */
 export function exportMap32TransformPatch(state, existing) {
-  return mergeDefinitions(existing, MAP32_FORMAT, state.map32TransformState?.map32Definitions || []);
+  const document = mergeDefinitions(existing, MAP32_FORMAT, state.map32TransformState?.map32Definitions || []);
+  return { ...document, definitions: document.definitions.map(normalizeMap32Definition) };
 }
 
 /**
@@ -73,6 +74,43 @@ export function transformedMap32Id(state, map32Id, transform) {
 }
 
 /**
+ * Return or create a map32 id with one map16 quadrant replaced.
+ *
+ * Parameters:
+ *   state: Shared Workbench state.
+ *   map32Id: Source map32 id.
+ *   quadrantIndex: Zero-based tl/tr/bl/br quadrant index.
+ *   map16Id: Replacement map16 id.
+ * Returns:
+ *   Numeric map32 id for the edited tile.
+ */
+export function map32WithMap16(state, map32Id, quadrantIndex, map16Id) {
+  const ids = (state.assets.map32ToMap16[map32Id] || [0, 0, 0, 0]).slice();
+  ids[quadrantIndex] = map16Id;
+  return defineMap32(state, ids, map32Id);
+}
+
+/**
+ * Return or create a map16 id with one map8 word replaced.
+ *
+ * Parameters:
+ *   state: Shared Workbench state.
+ *   map16Id: Source map16 id.
+ *   slotIndex: Zero-based tl/tr/bl/br slot index.
+ *   map8Word: Replacement packed map8 word.
+ * Returns:
+ *   Numeric map16 id for the edited tile.
+ */
+export function map16WithMap8Word(state, map16Id, slotIndex, map8Word) {
+  const words = map16Words(state.assets, map16Id);
+  while (words.length < QUADRANTS.length) {
+    words.push(0);
+  }
+  words[slotIndex] = map8Word;
+  return defineMap16(state, words);
+}
+
+/**
  * Format a numeric id as uppercase hex.
  *
  * Parameters:
@@ -82,6 +120,60 @@ export function transformedMap32Id(state, map32Id, transform) {
  */
 export function hex(value) {
   return `0x${Number(value).toString(16).toUpperCase().padStart(4, "0")}`;
+}
+
+/**
+ * Format a numeric id as a base recipe reference.
+ *
+ * Parameters:
+ *   value: Numeric id.
+ * Returns:
+ *   base:0x.... reference.
+ */
+function baseRef(value) {
+  return `base:${hex(value)}`;
+}
+
+/**
+ * Normalize older generated map32 definitions to the resolver's reference form.
+ *
+ * Parameters:
+ *   definition: Map32 definition patch operation.
+ * Returns:
+ *   Definition with numeric `from` references written as base:0x....
+ */
+function normalizeMap32Definition(definition) {
+  const from = definition.from;
+  if (from === undefined || isNamedTileRef(from) || !isNumericTileRef(from)) {
+    return definition;
+  }
+  return { ...definition, from: baseRef(from) };
+}
+
+/**
+ * Return true when a tile reference already carries an explicit namespace.
+ *
+ * Parameters:
+ *   value: Candidate tile reference.
+ * Returns:
+ *   True for base: or mod: references.
+ */
+function isNamedTileRef(value) {
+  return typeof value === "string" && (value.startsWith("base:") || value.startsWith("mod:"));
+}
+
+/**
+ * Return true when a tile reference is a plain JSON number or integer string.
+ *
+ * Parameters:
+ *   value: Candidate tile reference.
+ * Returns:
+ *   True for number, decimal string, or 0x-prefixed hexadecimal string.
+ */
+function isNumericTileRef(value) {
+  return typeof value === "number" || (
+    typeof value === "string" && /^[+-]?(?:0[xX][0-9a-fA-F]+|\d+)$/.test(value)
+  );
 }
 
 /**
@@ -203,7 +295,7 @@ function defineMap32(state, map16Ids, source) {
   state.map32TransformState.map32Definitions.push({
     kind: "tile.map32-definition",
     id,
-    from: hex(source),
+    from: baseRef(source),
     setMap16: Object.fromEntries(QUADRANTS.map((label, index) => [label, map16Ids[index]])),
   });
   return id;
